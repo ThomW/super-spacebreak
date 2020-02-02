@@ -43,21 +43,39 @@ var Breakout = new Phaser.Class({
         this.add.image(400, 300, 'background');
 
         //  Enable world bounds, but disable the ceiling
-        this.physics.world.setBoundsCollision(true, true, true, false);
+        // this.physics.world.setBoundsCollision(true, true, true, false);
+        this.matter.world.setBounds();
 
-        this.bricks = this.physics.add.staticGroup();
+        // Disable gravity
+        this.matter.world.disableGravity();
+
+        this.bricks = [];
 
         //  Setting { min: x, max: y } will pick a random value between min and max
         //  Setting { start: x, end: y } will ease between start and end
     
-        this.ball = this.physics.add.image(400, 480, 'ball').setCollideWorldBounds(true).setBounce(1);
+        this.ball = this.matter.add.image(400, 480, 'ball').setBounce(1);
+        // this.ball.setCollideWorldBounds(true);
         this.ball.setData('onPaddle', true);
 
-        this.paddle = this.physics.add.image(400, 500, 'paddle').setImmovable();
+        this.paddle = this.matter.add.image(400, 500, 'paddle');
 
+        /*
         //  Our colliders
-        this.physics.add.collider(this.ball, this.bricks, this.hitBrick, null, this);
-        this.physics.add.collider(this.ball, this.paddle, this.hitPaddle, null, this);
+        this.matter.add.collider(this.ball, this.bricks, this.hitBrick, null, this);
+        this.matter.add.collider(this.ball, this.paddle, this.hitPaddle, null, this);
+        */
+       this.matter.world.on('collisionstart', function (event, bodyA, bodyB) {
+
+            
+
+        /*
+            bodyA.gameObject.setTint(0xff0000);
+            bodyB.gameObject.setTint(0x00ff00);
+        */
+
+        });
+
 
         //  Input events
         this.input.on('pointermove', function (pointer) {
@@ -78,7 +96,7 @@ var Breakout = new Phaser.Class({
 
             if (this.ball.getData('onPaddle'))
             {
-                this.ball.setVelocity(75, -300);
+                this.ball.setVelocity(75, -50);
                 this.ball.setData('onPaddle', false);
             }
 
@@ -178,8 +196,12 @@ var Breakout = new Phaser.Class({
     {
         this.resetBall();
 
-        // Clear out the current bricks
-        this.bricks.clear(true, true);
+        // Clear out all of the brick objects
+        while (this.bricks.length)
+        {
+            Matter.World.remove(this.bricks[0]);
+            bricks.shift();
+        }
 
         var colors = [0xD62226, 0xF5C603, 0x01AA31, 0x1FC3CD, 0x4542B9, 0x411271];
 
@@ -191,7 +213,11 @@ var Breakout = new Phaser.Class({
             for (var j = 0; j < 13; j++)
             {
                 var brickIdx = 'brick' + (i % 5);
-                var brick = this.bricks.create(57 + j * 57, 150 + i * 25, brickIdx);
+                
+                // var brick = this.bricks.create(57 + j * 57, 150 + i * 25, brickIdx);
+                var brick = this.matter.add.image(57 + j * 57, 150 + i * 25, brickIdx);
+
+
                 brick.visible = true;                
             }
         }
@@ -223,7 +249,7 @@ var config = {
     parent: 'gamebox',
     scene: [ Breakout ],
     physics: {
-        default: 'arcade'
+        default: 'matter'
     }
 };
 
