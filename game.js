@@ -54,11 +54,15 @@ var Breakout = new Phaser.Class({
         //  Setting { min: x, max: y } will pick a random value between min and max
         //  Setting { start: x, end: y } will ease between start and end
     
-        this.ball = this.matter.add.image(400, 480, 'ball').setBounce(1);
+        this.ball = this.add.sprite(400, 480, 'ball');
+        this.ball.setData('xv', 0);
+        this.ball.setData('yv', 0);
+
         // this.ball.setCollideWorldBounds(true);
+        
         this.ball.setData('onPaddle', true);
 
-        this.paddle = this.matter.add.image(400, 500, 'paddle');
+        this.paddle = this.add.image(400, 500, 'paddle');
 
         /*
         //  Our colliders
@@ -96,7 +100,9 @@ var Breakout = new Phaser.Class({
 
             if (this.ball.getData('onPaddle'))
             {
-                this.ball.setVelocity(75, -50);
+                this.ball.setData('xv', 0.5);
+                this.ball.setData('yv', -6);
+
                 this.ball.setData('onPaddle', false);
             }
 
@@ -110,15 +116,57 @@ var Breakout = new Phaser.Class({
         this.title = this.add.image(400, 300, 'title');
     },
 
-    hitBrick: function (ball, brick)
+    hitBrick: function (brick)
     {
-        brick.disableBody(true, true);
+        // Figure out what part of the ball overlaps with the brick to bounce correctly
+        var ballBounds = this.ball.getBounds();
+        var brickBounds = brick.getBounds();
+
+        // I have to do a bunch of this work because the ball is so large.
+
+        // Hit somewhere on left side of the brick, meaning x should go negative
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.top)
+            || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.centerY)
+            || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.bottom)
+            )
+        {
+            this.ball.setData('xv', Math.abs(this.ball.getData('xv')) * -1);
+        }
+        // Right side of the brick
+        else if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.top)
+              || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.centerY)
+              || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.bottom)
+            )
+        {
+            this.ball.setData('xv', Math.abs(this.ball.getData('xv')));
+        }
+
+        // Hit the top side of the brick - Y should go negative
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left,    ballBounds.bottom)
+         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.bottom)
+         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.bottom)
+            )
+        {
+            this.ball.setData('yv', Math.abs(this.ball.getData('yv')) * -1);   
+        }
+        // Hit bottom - ball should go positive
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left,    ballBounds.top)
+         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.top)
+         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.top)
+            )
+        {
+            this.ball.setData('yv', Math.abs(this.ball.getData('yv')));
+        }
+
+        brick.destroy();
+
+        this.bricks = this.arrayRemove(this.bricks, brick);
 
         this.soundBrickHit.play();
 
         this.updateScore(1);
 
-        if (this.bricks.countActive() === 0)
+        if (this.bricks.length === 0)
         {
             this.resetLevel();
         }
@@ -132,7 +180,8 @@ var Breakout = new Phaser.Class({
 
             this.ballsText.setText('SHOTS: ' + this.remainingBalls);
 
-            this.ball.setVelocity(0);
+            this.stopBall();
+
             this.ball.setPosition(this.paddle.x, 478);
             this.ball.setData('onPaddle', true);
         }
@@ -147,28 +196,34 @@ var Breakout = new Phaser.Class({
     {
         var diff = 0;
 
+        this.setVelocity(ball, 'y', ball.getData('yv') * -1);
+
         if (ball.x < paddle.x)
         {
             //  Ball is on the left-hand side of the paddle
             diff = paddle.x - ball.x;
-            ball.setVelocityX(-10 * diff);
+            this.setVelocity(ball, 'x', -0.5 * diff);
         }
         else if (ball.x > paddle.x)
         {
             //  Ball is on the right-hand side of the paddle
             diff = ball.x -paddle.x;
-            ball.setVelocityX(10 * diff);
+            this.setVelocity(ball, 'x', 0.5 * diff);
         }
         else
         {
             //  Ball is perfectly in the middle
             //  Add a little random X to stop it bouncing straight up!
-            ball.setVelocityX(2 + Math.random() * 8);
+            this.setVelocity(ball, 'x', 0.25 + Math.random() * 2);
         }
     },
 
     update: function ()
     {
+        this.ball.x += this.ball.getData('xv');
+        this.ball.y += this.ball.getData('yv');
+
+
         if (this.ball.y > 600)
         {
             if (this.remainingBalls > 0) {
@@ -177,6 +232,45 @@ var Breakout = new Phaser.Class({
                 this.gameOver();
             }
         }
+        else if (this.ball.y < 100)
+        {
+            this.bounceBallY();
+        }
+
+        if (this.ball.x > 775)
+        {
+            this.ball.x = 775;
+            this.bounceBallX();
+        } 
+        else if (this.ball.x < 25)
+        {
+            this.ball.x = 25;
+            this.bounceBallX();
+        }
+
+        // See if the ball is hitting the paddle
+        if (this.checkOverlap(this.paddle, this.ball))
+        {
+            this.hitPaddle(this.ball, this.paddle);
+        }
+
+        // See if the ball is hitting any of the bricks
+        var brick = null;
+
+        for (var i = 0; i < this.bricks.length; i++)
+        {
+            if (this.checkOverlap(this.bricks[i], this.ball))
+            {
+                brick = this.bricks[i];
+                break;
+            }
+        }
+
+        if (brick != null)
+        {
+            this.hitBrick(brick);
+        }
+
 
         /*
         var brickSpeed = 0.05;
@@ -205,7 +299,7 @@ var Breakout = new Phaser.Class({
 
         var colors = [0xD62226, 0xF5C603, 0x01AA31, 0x1FC3CD, 0x4542B9, 0x411271];
 
-        // Draw the bricks
+        // Setup
         for (var i = 0; i < 5; i++)
         {
             var rowColor = colors[i % colors.length];
@@ -215,10 +309,11 @@ var Breakout = new Phaser.Class({
                 var brickIdx = 'brick' + (i % 5);
                 
                 // var brick = this.bricks.create(57 + j * 57, 150 + i * 25, brickIdx);
-                var brick = this.matter.add.image(57 + j * 57, 150 + i * 25, brickIdx);
+                var brick = this.add.sprite(57 + j * 57, 150 + i * 25, brickIdx);
 
+                brick.visible = true;
 
-                brick.visible = true;                
+                this.bricks.push(brick);
             }
         }
 
@@ -239,6 +334,40 @@ var Breakout = new Phaser.Class({
 
     gameOver: function() {
 
+        this.stopBall();
+    },
+    // ATTN: This doesn't modify the array - it returns that
+    arrayRemove: function(arr, value) {
+       return arr.filter(function(ele){
+           return ele != value;
+       });
+    },
+    stopBall: function() {
+        this.ball.setData('xv', 0);
+        this.ball.setData('yv', 0);
+    },
+    bounceBall: function() {
+        this.ball.setData('xv', this.ball.getData('xv') * -1);
+        this.ball.setData('yv', this.ball.getData('yv') * -1);
+    },
+    bounceBallX: function() {
+        this.ball.setData('xv', this.ball.getData('xv') * -1);
+    },
+    bounceBallY: function() {
+        this.ball.setData('yv', this.ball.getData('yv') * -1);
+    },
+    checkOverlap: function(spriteA, spriteB) {
+        if (typeof spriteA == 'undefined' || typeof spriteB == 'undefined') 
+        {
+            return false;
+        }
+        var boundsA = spriteA.getBounds();
+        var boundsB = spriteB.getBounds();
+
+        return Phaser.Geom.Rectangle.Overlaps(boundsA, boundsB);
+    },
+    setVelocity: function(obj, axis, value) {
+        obj.setData(axis + 'v', value);
     }
 });
 
