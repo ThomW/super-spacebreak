@@ -1,11 +1,11 @@
-Example.ragdoll.ragdoll = function(x, y, scale, options) {
+ragdoll = function(x, y, scale, options) {
     scale = typeof scale === 'undefined' ? 1 : scale;
 
-    var Body = Matter.Body,
-        Bodies = Matter.Bodies,
-        Constraint = Matter.Constraint,
-        Composite = Matter.Composite,
-        Common = Matter.Common;
+    var Body = Phaser.Physics.Matter.Matter.Body,
+        Bodies = Phaser.Physics.Matter.Matter.Bodies,
+        Constraint = Phaser.Physics.Matter.Matter.Constraint,
+        Composite = Phaser.Physics.Matter.Matter.Composite,
+        Common = Phaser.Physics.Matter.Matter.Common;
 
     var headOptions = Common.extend({
         label: 'head',

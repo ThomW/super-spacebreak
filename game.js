@@ -11,11 +11,12 @@ var Breakout = new Phaser.Class({
         this.bricks;
         this.paddle;
         this.ball;
+        this.stars;
     },
 
     preload: function ()
     {
-        this.load.image('title', 'img/title.png');
+        this.load.image('title', 'img/title.jpg');
         this.load.image('background', 'img/background.png');
         this.load.image('paddle', 'img/paddle.png');
 
@@ -30,17 +31,45 @@ var Breakout = new Phaser.Class({
             'audio/explode.ogg',
             'audio/explode.mp3'
         ]);
-    
     },
 
     create: function ()
     {
         this.score = 0;
         this.remainingBalls = 3;
+        this.ballDefaultVelocity = 5;
 
         this.soundBrickHit = this.sound.add('brick_hit');
 
         this.add.image(400, 300, 'background');
+
+        // Add stars to the game
+        this.stars = [];
+        for (var i = 0; i < 40; i++)
+        {
+            var star = this.add.circle(this.rnd(0,800), this.rnd(0,600), this.rnd(1,3), 0xffffffff);
+            
+            // Calculate velocity
+            var angleRad = Math.atan(star.y  / star.x);
+            var velocity = this.rnd(5, 20) / 100.0;
+
+            var xVel = Math.cos(angleRad) * velocity;
+            var yVel = Math.sin(angleRad) * velocity;
+
+            if (star.x < 400)
+            {
+                xVel *= -1;
+            }
+            if (star.y < 300)
+            {
+                yVel *= -1;
+            }
+
+            this.setVelocity(star, 'x', xVel);
+            this.setVelocity(star, 'y', yVel);
+
+            this.stars.push(star);
+        }
 
         //  Enable world bounds, but disable the ceiling
         // this.physics.world.setBoundsCollision(true, true, true, false);
@@ -51,28 +80,16 @@ var Breakout = new Phaser.Class({
 
         this.bricks = [];
 
-        //  Setting { min: x, max: y } will pick a random value between min and max
-        //  Setting { start: x, end: y } will ease between start and end
-    
         this.ball = this.add.sprite(400, 480, 'ball');
-        this.ball.setData('xv', 0);
-        this.ball.setData('yv', 0);
+        this.setVelocity(this.ball, 'x', 0.0);
+        this.setVelocity(this.ball, 'y', 0.0);
 
-        // this.ball.setCollideWorldBounds(true);
-        
+        this.stopBall();
         this.ball.setData('onPaddle', true);
 
         this.paddle = this.add.image(400, 500, 'paddle');
 
-        /*
-        //  Our colliders
-        this.matter.add.collider(this.ball, this.bricks, this.hitBrick, null, this);
-        this.matter.add.collider(this.ball, this.paddle, this.hitPaddle, null, this);
-        */
        this.matter.world.on('collisionstart', function (event, bodyA, bodyB) {
-
-            
-
         /*
             bodyA.gameObject.setTint(0xff0000);
             bodyB.gameObject.setTint(0x00ff00);
@@ -85,7 +102,7 @@ var Breakout = new Phaser.Class({
         this.input.on('pointermove', function (pointer) {
 
             //  Keep the paddle within the game
-            this.paddle.x = Phaser.Math.Clamp(pointer.x, 52, 748);
+            this.paddle.x = Phaser.Math.Clamp(pointer.x, 80, 720);
 
             if (this.ball.getData('onPaddle'))
             {
@@ -100,9 +117,8 @@ var Breakout = new Phaser.Class({
 
             if (this.ball.getData('onPaddle'))
             {
-                this.ball.setData('xv', 0.5);
-                this.ball.setData('yv', -6);
-
+                this.setVelocity(this.ball, 'x', 0);
+                this.setVelocity(this.ball, 'y', -3);
                 this.ball.setData('onPaddle', false);
             }
 
@@ -130,7 +146,7 @@ var Breakout = new Phaser.Class({
             || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.bottom)
             )
         {
-            this.ball.setData('xv', Math.abs(this.ball.getData('xv')) * -1);
+            this.setVelocity(this.ball, 'x', Math.abs(this.getVelocity(this.ball, 'x')) * -1);
         }
         // Right side of the brick
         else if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.top)
@@ -138,7 +154,7 @@ var Breakout = new Phaser.Class({
               || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.bottom)
             )
         {
-            this.ball.setData('xv', Math.abs(this.ball.getData('xv')));
+            this.setVelocity(this.ball, 'x', Math.abs(this.getVelocity(this.ball, 'x')));
         }
 
         // Hit the top side of the brick - Y should go negative
@@ -147,7 +163,7 @@ var Breakout = new Phaser.Class({
          || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.bottom)
             )
         {
-            this.ball.setData('yv', Math.abs(this.ball.getData('yv')) * -1);   
+            this.setVelocity(this.ball, 'y', Math.abs(this.getVelocity(this.ball, 'y')) * -1);   
         }
         // Hit bottom - ball should go positive
         if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left,    ballBounds.top)
@@ -155,7 +171,7 @@ var Breakout = new Phaser.Class({
          || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.top)
             )
         {
-            this.ball.setData('yv', Math.abs(this.ball.getData('yv')));
+            this.setVelocity(this.ball, 'y', Math.abs(this.getVelocity(this.ball, 'y')));
         }
 
         brick.destroy();
@@ -190,39 +206,69 @@ var Breakout = new Phaser.Class({
     resetLevel: function ()
     {
         this.resetBricks();
+
+        this.stopBall();
+        this.ball.setPosition(this.paddle.x, 478);
+        this.ball.setData('onPaddle', true);
     },
 
     hitPaddle: function (ball, paddle)
     {
-        var diff = 0;
+        // This is the max angle of deflection
+        var maxAngle = 40.0;
 
-        this.setVelocity(ball, 'y', ball.getData('yv') * -1);
+        // Calcuate where on the paddle the ball hit in a number from -1.0 to 1.0 representing percent
+        var diff = ball.x - paddle.x;
+        var pct = diff / (paddle.width * 0.5);
 
-        if (ball.x < paddle.x)
-        {
-            //  Ball is on the left-hand side of the paddle
-            diff = paddle.x - ball.x;
-            this.setVelocity(ball, 'x', -0.5 * diff);
+        // Deal with a positive angle - we'll flip at the end if necessary
+        pct = Math.abs(pct);
+
+        // Make sure pct doesn't go higher than 100%
+        pct = Math.min(1, pct);
+
+        // Calcuate angle -- remembering that straight up is 90deg
+        var angle = (maxAngle * pct) + 90.0;
+
+        // Convert angle to radians
+        angle = angle * 0.01745329252;
+
+        // Calculate velocities
+        var xVel = Math.cos(angle) * this.ballDefaultVelocity;
+        var yVel = Math.sin(angle) * this.ballDefaultVelocity;
+
+        // Flip the xVel if the ball is on the left side of the paddle
+        if (ball.x > paddle.x) {
+            xVel *= -1;
         }
-        else if (ball.x > paddle.x)
-        {
-            //  Ball is on the right-hand side of the paddle
-            diff = ball.x -paddle.x;
-            this.setVelocity(ball, 'x', 0.5 * diff);
-        }
-        else
-        {
-            //  Ball is perfectly in the middle
-            //  Add a little random X to stop it bouncing straight up!
-            this.setVelocity(ball, 'x', 0.25 + Math.random() * 2);
-        }
+
+        // Make sure yVel points up!
+        yVel = Math.abs(yVel) * -1;
+
+        // Set velocities
+        this.setVelocity(this.ball, 'x', xVel);
+        this.setVelocity(this.ball, 'y', yVel);
     },
 
     update: function ()
     {
-        this.ball.x += this.ball.getData('xv');
-        this.ball.y += this.ball.getData('yv');
+        for (var i = 0; i < this.stars.length; i++)
+        {
+            var star = this.stars[i];
+            var xv = this.getVelocity(star, 'x');
+            var yv = this.getVelocity(star, 'y');
+            star.x += xv;
+            star.y += yv;
 
+            if (star.x < 0 || star.x > 800 || star.y < 0 || star.y > 600) {
+                var rnd = this.rnd(33, 66) * 0.1;
+                star.x = 400 + (xv * rnd);
+                star.y = 300 + (xv * rnd);
+            }
+        }
+
+        this.ball.x += this.getVelocity(this.ball, 'x');
+        this.ball.y += this.getVelocity(this.ball, 'y');
 
         if (this.ball.y > 600)
         {
@@ -256,7 +302,6 @@ var Breakout = new Phaser.Class({
 
         // See if the ball is hitting any of the bricks
         var brick = null;
-
         for (var i = 0; i < this.bricks.length; i++)
         {
             if (this.checkOverlap(this.bricks[i], this.ball))
@@ -343,18 +388,18 @@ var Breakout = new Phaser.Class({
        });
     },
     stopBall: function() {
-        this.ball.setData('xv', 0);
-        this.ball.setData('yv', 0);
+        this.setVelocity(this.ball, 'x', 0);
+        this.setVelocity(this.ball, 'y', 0);
     },
     bounceBall: function() {
-        this.ball.setData('xv', this.ball.getData('xv') * -1);
-        this.ball.setData('yv', this.ball.getData('yv') * -1);
+        this.bounceBallX();
+        this.bounceBallY();
     },
     bounceBallX: function() {
-        this.ball.setData('xv', this.ball.getData('xv') * -1);
+        this.setVelocity(this.ball, 'x', this.getVelocity(this.ball, 'x') * -1);
     },
     bounceBallY: function() {
-        this.ball.setData('yv', this.ball.getData('yv') * -1);
+        this.setVelocity(this.ball, 'y', this.getVelocity(this.ball, 'y') * -1);
     },
     checkOverlap: function(spriteA, spriteB) {
         if (typeof spriteA == 'undefined' || typeof spriteB == 'undefined') 
@@ -368,6 +413,9 @@ var Breakout = new Phaser.Class({
     },
     setVelocity: function(obj, axis, value) {
         obj.setData(axis + 'v', value);
+    },
+    getVelocity: function(obj, axis) {
+        return obj.getData(axis + 'v');
     }
 });
 
