@@ -47,24 +47,21 @@ var Breakout = new Phaser.Class({
         this.stars = [];
         for (var i = 0; i < 40; i++)
         {
-            var star = this.add.circle(this.rnd(0,800), this.rnd(0,600), this.rnd(1,3), 0xffffffff);
-            
-            // Calculate velocity
-            var angleRad = Math.atan(star.y  / star.x);
-            var velocity = this.rnd(5, 20) / 100.0;
+            var starX = this.rnd(-400, 400);
+            var starY = this.rnd(-300, 300);
+
+            var angleRad = Math.atan(Math.abs(starY) / Math.abs(starX));
+            var velocity = this.rnd(5, 60) / 100.0;
 
             var xVel = Math.cos(angleRad) * velocity;
             var yVel = Math.sin(angleRad) * velocity;
 
-            if (star.x < 400)
-            {
-                xVel *= -1;
-            }
-            if (star.y < 300)
-            {
-                yVel *= -1;
-            }
+            if (starX < 0) { xVel *= -1; }
+            if (starY < 0) { yVel *= -1; }
 
+            // Create star centered relative to the center of the screen
+            var star = this.add.circle(starX + 400.0, starY + 400.0, this.rnd(1,3), 0xffffffff);
+            
             this.setVelocity(star, 'x', xVel);
             this.setVelocity(star, 'y', yVel);
 
@@ -261,9 +258,8 @@ var Breakout = new Phaser.Class({
             star.y += yv;
 
             if (star.x < 0 || star.x > 800 || star.y < 0 || star.y > 600) {
-                var rnd = this.rnd(33, 66) * 0.1;
-                star.x = 400 + (xv * rnd);
-                star.y = 300 + (xv * rnd);
+                star.x = 400;
+                star.y = 300;
             }
         }
 
