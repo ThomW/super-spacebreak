@@ -12,6 +12,7 @@ var Breakout = new Phaser.Class({
         this.paddle;
         this.ball;
         this.stars;
+        this.astronaut;
     },
 
     preload: function ()
@@ -22,15 +23,20 @@ var Breakout = new Phaser.Class({
 
         for (var i = 0; i < 5; i++) {
             this.load.image('brick' + i, 'img/brick-' + i + '.png');
+
+            this.load.audio('brick_hit_' + i, [
+                'audio/hit-row' + i + '.ogg',
+                'audio/hit-row' + i + '.mp3'
+            ]);
         }
+
+        this.load.audio('paddle_hit', [
+            'audio/hit-paddle.ogg',
+            'audio/hit-paddle.mp3'
+        ]);
 
         this.load.image('ball', 'img/ball.png');
         this.load.atlas('explosion', 'img/explosion.png', 'img/explosion.json');
-
-        this.load.audio('brick_hit', [
-            'audio/explode.ogg',
-            'audio/explode.mp3'
-        ]);
     },
 
     create: function ()
@@ -39,7 +45,11 @@ var Breakout = new Phaser.Class({
         this.remainingBalls = 3;
         this.ballDefaultVelocity = 5;
 
-        this.soundBrickHit = this.sound.add('brick_hit');
+        this.soundBrickHit = [];
+        for (var i = 0; i < 5; i++) {
+            this.soundBrickHit[i] = this.sound.add('brick_hit_' + i);
+        }
+        this.soundPaddleHit = this.sound.add('paddle_hit');
 
         this.add.image(400, 300, 'background');
 
@@ -171,11 +181,11 @@ var Breakout = new Phaser.Class({
             this.setVelocity(this.ball, 'y', Math.abs(this.getVelocity(this.ball, 'y')));
         }
 
+        this.soundBrickHit[brick.getData('row')].play();
+
+        // Destroy and remove the brick from the collection
         brick.destroy();
-
         this.bricks = this.arrayRemove(this.bricks, brick);
-
-        this.soundBrickHit.play();
 
         this.updateScore(1);
 
@@ -245,6 +255,8 @@ var Breakout = new Phaser.Class({
         // Set velocities
         this.setVelocity(this.ball, 'x', xVel);
         this.setVelocity(this.ball, 'y', yVel);
+
+        this.soundPaddleHit.play();
     },
 
     update: function ()
@@ -353,6 +365,7 @@ var Breakout = new Phaser.Class({
                 var brick = this.add.sprite(57 + j * 57, 150 + i * 25, brickIdx);
 
                 brick.visible = true;
+                brick.setData('row', 4 - i); // Flip the sounds
 
                 this.bricks.push(brick);
             }
