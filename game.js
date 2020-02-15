@@ -8,6 +8,13 @@ var Breakout = new Phaser.Class({
     {
         Phaser.Scene.call(this, { key: 'breakout' });
 
+        this.gameOver = true;
+
+        this.score;
+        this.remainingBalls;
+        this.level;
+        this.highestRowHit;
+
         this.bricks;
         this.paddle;
         this.ball;
@@ -20,6 +27,13 @@ var Breakout = new Phaser.Class({
         this.load.image('title', 'img/title.jpg');
         this.load.image('background', 'img/background.png');
         this.load.image('paddle', 'img/paddle.png');
+
+        this.load.image('astro-head', 'img/astro-head.png');
+        this.load.image('astro-torso', 'img/astro-torso.png');
+        this.load.image('astro-upper-arm', 'img/astro-upper-arm.png');
+        this.load.image('astro-lower-arm', 'img/astro-lower-arm.png');
+        this.load.image('astro-upper-leg', 'img/astro-upper-leg.png');
+        this.load.image('astro-lower-leg', 'img/astro-lower-leg.png');
 
         for (var i = 0; i < 5; i++) {
             this.load.image('brick' + i, 'img/brick-' + i + '.png');
@@ -41,8 +55,6 @@ var Breakout = new Phaser.Class({
 
     create: function ()
     {
-        this.score = 0;
-        this.remainingBalls = 3;
         this.ballDefaultVelocity = 5;
 
         this.soundBrickHit = [];
@@ -78,13 +90,6 @@ var Breakout = new Phaser.Class({
             this.stars.push(star);
         }
 
-        //  Enable world bounds, but disable the ceiling
-        // this.physics.world.setBoundsCollision(true, true, true, false);
-        this.matter.world.setBounds();
-
-        // Disable gravity
-        this.matter.world.disableGravity();
-
         this.bricks = [];
 
         this.ball = this.add.sprite(400, 480, 'ball');
@@ -94,22 +99,29 @@ var Breakout = new Phaser.Class({
         this.stopBall();
         this.ball.setData('onPaddle', true);
 
-        this.paddle = this.add.image(400, 500, 'paddle');
+        // The paddle is a matter physics object so that the astronaut can slam into it
+        this.paddle = this.matter.add.image(400, 500, 'paddle').setStatic(true);
 
-       this.matter.world.on('collisionstart', function (event, bodyA, bodyB) {
-        /*
-            bodyA.gameObject.setTint(0xff0000);
-            bodyB.gameObject.setTint(0x00ff00);
-        */
+        // Instantiate our astronaut
+        this.astronaut = new ragdoll(400, 600, 0.4);
+        this.matter.world.add(this.astronaut);
 
-        });
+        for (var i = 0; i < this.astronaut.bodies.length; i++) {
+            body = this.astronaut.bodies[i];
+            if (body.label == 'left-hand') {
+                this.matter.add.constraint(this.paddle, body, 10, 1);
+                break;
+            }
+        }
 
+        // There's no x gravity and gravity in the positive Y direction
+        this.matter.world.setGravity(0, 0, 0.005);
 
         //  Input events
         this.input.on('pointermove', function (pointer) {
 
             //  Keep the paddle within the game
-            this.paddle.x = Phaser.Math.Clamp(pointer.x, 80, 720);
+            this.paddle.x = Phaser.Math.Clamp(pointer.x, 65, 735);
 
             if (this.ball.getData('onPaddle'))
             {
@@ -120,19 +132,21 @@ var Breakout = new Phaser.Class({
 
         this.input.on('pointerup', function (pointer) {
 
-            this.title.visible = false;
-
             if (this.ball.getData('onPaddle'))
             {
-                this.setVelocity(this.ball, 'x', 0);
-                this.setVelocity(this.ball, 'y', -3);
                 this.ball.setData('onPaddle', false);
+
+                if (this.gameOver) {
+                    this.startGame();
+                } else {
+                    this.startLevel();
+                }
             }
 
         }, this);
         
-        this.scoreText = this.add.text(10, 10, 'SCORE: 0', { fontSize: '32px', fill: '#fff' });
-        this.ballsText = this.add.text(600, 10, 'SHOTS: 3', { fontSize: '32px', fill: '#fff' });
+        this.scoreText = this.add.text(10, 570, 'SCORE: 0', { fontSize: '32px', fill: '#fff' });
+        this.ballsText = this.add.text(600, 570, 'SHOTS: 3', { fontSize: '32px', fill: '#fff' });
 
         this.resetBricks();
 
@@ -145,53 +159,61 @@ var Breakout = new Phaser.Class({
         var ballBounds = this.ball.getBounds();
         var brickBounds = brick.getBounds();
 
-        // I have to do a bunch of this work because the ball is so large.
+        
+        var hit = false;
 
         // Hit somewhere on left side of the brick, meaning x should go negative
-        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.top)
-            || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.centerY)
-            || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.bottom)
-            )
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right, ballBounds.centerY))
         {
             this.setVelocity(this.ball, 'x', Math.abs(this.getVelocity(this.ball, 'x')) * -1);
+            hit = true;
         }
         // Right side of the brick
-        else if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.top)
-              || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.centerY)
-              || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.bottom)
-            )
+        else if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left, ballBounds.centerY))
         {
             this.setVelocity(this.ball, 'x', Math.abs(this.getVelocity(this.ball, 'x')));
+            hit = true;
         }
 
         // Hit the top side of the brick - Y should go negative
-        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left,    ballBounds.bottom)
-         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.bottom)
-         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.bottom)
-            )
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.bottom))
         {
             this.setVelocity(this.ball, 'y', Math.abs(this.getVelocity(this.ball, 'y')) * -1);   
+            hit = true;
         }
+
         // Hit bottom - ball should go positive
-        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.left,    ballBounds.top)
-         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.top)
-         || Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.right,   ballBounds.top)
-            )
+        if (Phaser.Geom.Rectangle.Contains(brickBounds, ballBounds.centerX, ballBounds.top))
         {
             this.setVelocity(this.ball, 'y', Math.abs(this.getVelocity(this.ball, 'y')));
+            hit = true;
         }
 
-        this.soundBrickHit[brick.getData('row')].play();
+        if (hit) {
 
-        // Destroy and remove the brick from the collection
-        brick.destroy();
-        this.bricks = this.arrayRemove(this.bricks, brick);
+            // This is the row number for the brick that was just hit
+            var brickRow = brick.getData('row');
 
-        this.updateScore(1);
+            // Play the appropriate sound
+            this.soundBrickHit[brickRow].play();
 
-        if (this.bricks.length === 0)
-        {
-            this.resetLevel();
+            // Calculate new velocity for the ball - it gets faster as it hits further up the wall
+            if (this.highestRowHit < brickRow)
+            {
+                this.highestRowHit = brickRow;
+                this.calculateNewBallVelocity();
+            }
+
+            // Destroy and remove the brick from the collection
+            brick.destroy();
+            this.bricks = this.arrayRemove(this.bricks, brick);
+
+            this.updateScore(1);
+
+            if (this.bricks.length === 0)
+            {
+                this.levelUp();
+            }
         }
     },
 
@@ -207,15 +229,84 @@ var Breakout = new Phaser.Class({
 
             this.ball.setPosition(this.paddle.x, 478);
             this.ball.setData('onPaddle', true);
+
+            // Reset the highest row hit to the bottom row
+            this.highestRowHit = 0;
         }
     },
 
-    resetLevel: function ()
+    startGame: function()
     {
+        // Reset variables at the start of the game
+        this.level = 1;
+        this.score = 0;
+        this.remainingBalls = 3;
+        this.highestRowHit = 0;
+        this.gameOver = false;
+
+        // Hide the title screen
+        this.title.visible = false;
+
+        // Call levelUp to kick things into gear
+        this.startLevel();
+    },
+
+    // This basically returns the current value we're using for the hypotenuse of our angles.
+    // It's calculated based on the default velocity at the beginning of the game, scaled up 
+    // based on the level the player is on, and the highest row of blocks hit on this level.
+    getCurrentVelocity: function()
+    {
+        var ret = this.ballDefaultVelocity + ((this.level - 1) * 0.75) + (this.highestRowHit * 0.5);
+        // console.log('Velocity: ' + ret);
+        return ret;
+    },
+
+    calculateNewBallVelocity: function(angle)
+    {
+        var origX = this.getVelocity(this.ball, 'x');
+        var origY = this.getVelocity(this.ball, 'y');
+
+        // Calculate the angle based on the current x+yVel
+        var angleRad = Math.atan(Math.abs(this.getVelocity(this.ball, 'y')) / Math.abs(this.getVelocity(this.ball, 'x')));
+
+        // Calculate new velocity
+        var xVel = Math.cos(angleRad) * this.getCurrentVelocity();
+        var yVel = Math.sin(angleRad) * this.getCurrentVelocity();
+
+        if (origX < 0) { xVel *= -1; }
+        if (origY < 0) { yVel *= -1; }
+
+        this.setVelocity(this.ball, 'x', xVel);
+        this.setVelocity(this.ball, 'y', yVel);
+    },
+
+    startLevel: function()
+    {
+        // Calcuate angle -- remembering that straight up is 90deg
+        var angle = this.rnd(110, 130);
+
+        // Convert angle to radians
+        angle = angle * 0.01745329252;
+
+        // Calculate velocities
+        var xVel = Math.cos(angle) * this.getCurrentVelocity();
+        var yVel = Math.sin(angle) * this.getCurrentVelocity();
+
+        // Store velocities
+        this.setVelocity(this.ball, 'x', xVel);
+        this.setVelocity(this.ball, 'y', yVel);
+    },
+
+    levelUp: function ()
+    {
+        this.level += 1;
+
+        this.highestRowHit = 0;
+
         this.resetBricks();
 
         this.stopBall();
-        this.ball.setPosition(this.paddle.x, 478);
+        this.ball.setPosition(this.paddle.x, this.paddle.y - 20);
         this.ball.setData('onPaddle', true);
     },
 
@@ -241,8 +332,8 @@ var Breakout = new Phaser.Class({
         angle = angle * 0.01745329252;
 
         // Calculate velocities
-        var xVel = Math.cos(angle) * this.ballDefaultVelocity;
-        var yVel = Math.sin(angle) * this.ballDefaultVelocity;
+        var xVel = Math.cos(angle) * this.getCurrentVelocity();
+        var yVel = Math.sin(angle) * this.getCurrentVelocity();
 
         // Flip the xVel if the ball is on the left side of the paddle
         if (ball.x > paddle.x) {
@@ -283,23 +374,28 @@ var Breakout = new Phaser.Class({
             if (this.remainingBalls > 0) {
                 this.resetBall();
             } else {
-                this.gameOver();
+                this.endGame();
             }
         }
-        else if (this.ball.y < 100)
+        else if (this.ball.y < 15)
         {
             this.bounceBallY();
+            this.soundPaddleHit.play();
         }
 
-        if (this.ball.x > 775)
+        var minX = 15;
+        var maxX = 800 - 15;
+        if (this.ball.x > maxX)
         {
-            this.ball.x = 775;
+            this.ball.x = maxX;
             this.bounceBallX();
+            this.soundPaddleHit.play();
         } 
-        else if (this.ball.x < 25)
+        else if (this.ball.x < minX)
         {
-            this.ball.x = 25;
+            this.ball.x = minX;
             this.bounceBallX();
+            this.soundPaddleHit.play();
         }
 
         // See if the ball is hitting the paddle
@@ -324,19 +420,16 @@ var Breakout = new Phaser.Class({
             this.hitBrick(brick);
         }
 
-
         /*
+        // This moves the bricks down the screen for a weird challenge -- doesn't really work unless I add more bricks at the top of the screen once they get past a certain point.  
         var brickSpeed = 0.05;
         var lowestBrickY = 100000;
-        for (var i = 0; i < this.bricks.getChildren().length; i++)
+        for (var i = 0; i < this.bricks.length; i++)
         {
-            this.bricks.getChildren()[i].y += brickSpeed;
-            this.bricks.getChildren()[i].body.y += brickSpeed;
-            lowestBrickY = Math.min(this.bricks.getChildren()[i].y, lowestBrickY);
+            this.bricks[i].y += brickSpeed;
+            lowestBrickY = Math.min(this.bricks[i].y, lowestBrickY);
         }
         */
-        
-
     },
 
     resetBricks : function() 
@@ -346,8 +439,8 @@ var Breakout = new Phaser.Class({
         // Clear out all of the brick objects
         while (this.bricks.length)
         {
-            Matter.World.remove(this.bricks[0]);
-            bricks.shift();
+            this.matter.world.remove(this.bricks[0]);
+            this.bricks.shift();
         }
 
         var colors = [0xD62226, 0xF5C603, 0x01AA31, 0x1FC3CD, 0x4542B9, 0x411271];
@@ -386,7 +479,9 @@ var Breakout = new Phaser.Class({
         this.scoreText.setText('SCORE: ' + this.score);
     },
 
-    gameOver: function() {
+    endGame: function() {
+
+        this.gameOver = true;
 
         this.stopBall();
     },
@@ -429,13 +524,16 @@ var Breakout = new Phaser.Class({
 });
 
 var config = {
-    type: Phaser.CANVAS,
+    type: Phaser.AUTO,
     width: 800,
     height: 600,
     parent: 'gamebox',
     scene: [ Breakout ],
     physics: {
-        default: 'matter'
+        default: 'matter',
+        matter: {
+            debug: true
+        }
     }
 };
 

@@ -47,6 +47,14 @@ ragdoll = function(x, y, scale, options) {
     }, options);
 
     var leftLowerArmOptions = Common.extend({}, leftArmOptions, {
+        label: 'lower-left-arm',
+        render: {
+            fillStyle: '#E59B12'
+        }
+    });
+
+    var leftHandOptions = Common.extend({}, leftLowerArmOptions, {
+        label: 'left-hand',
         render: {
             fillStyle: '#E59B12'
         }
@@ -115,6 +123,7 @@ ragdoll = function(x, y, scale, options) {
     var rightLowerArm = Bodies.rectangle(x + 39 * scale, y + 25 * scale, 20 * scale, 60 * scale, rightLowerArmOptions);
     var leftUpperArm = Bodies.rectangle(x - 39 * scale, y - 15 * scale, 20 * scale, 40 * scale, leftArmOptions);
     var leftLowerArm = Bodies.rectangle(x - 39 * scale, y + 25 * scale, 20 * scale, 60 * scale, leftLowerArmOptions);
+    var leftHand = Bodies.rectangle(x - 10 * scale, y + 30 * scale, 20 * scale, 20 * scale, leftHandOptions);
     var leftUpperLeg = Bodies.rectangle(x - 20 * scale, y + 57 * scale, 20 * scale, 40 * scale, leftLegOptions);
     var leftLowerLeg = Bodies.rectangle(x - 20 * scale, y + 97 * scale, 20 * scale, 60 * scale, leftLowerLegOptions);
     var rightUpperLeg = Bodies.rectangle(x + 20 * scale, y + 57 * scale, 20 * scale, 40 * scale, rightLegOptions);
@@ -222,6 +231,23 @@ ragdoll = function(x, y, scale, options) {
         }
     });
 
+    var lowerLeftArmToLeftHand = Constraint.create({
+        bodyA: leftLowerArm,
+        bodyB: leftHand,
+        pointA: {
+            x: 0,
+            y: 5 * scale
+        },
+        pointB: {
+            x: 0,
+            y: 5 * scale
+        },
+        stiffness: 0.6,
+        render: {
+            visible: false
+        }
+    });
+
     var upperToLowerLeftLeg = Constraint.create({
         bodyA: leftUpperLeg,
         bodyB: leftLowerLeg,
@@ -286,13 +312,14 @@ ragdoll = function(x, y, scale, options) {
         bodies: [
             chest, head, leftLowerArm, leftUpperArm, 
             rightLowerArm, rightUpperArm, leftLowerLeg, 
-            rightLowerLeg, leftUpperLeg, rightUpperLeg
+            rightLowerLeg, leftUpperLeg, rightUpperLeg,
+            leftHand
         ],
         constraints: [
             upperToLowerLeftArm, upperToLowerRightArm, chestToLeftUpperArm, 
             chestToRightUpperArm, headContraint, upperToLowerLeftLeg, 
             upperToLowerRightLeg, chestToLeftUpperLeg, chestToRightUpperLeg,
-            legToLeg
+            legToLeg, lowerLeftArmToLeftHand
         ]
     });
 
