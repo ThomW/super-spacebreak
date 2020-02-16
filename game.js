@@ -24,7 +24,6 @@ var Breakout = new Phaser.Class({
 
     preload: function ()
     {
-        this.load.image('title', 'img/title.jpg');
         this.load.image('background', 'img/background.png');
         this.load.image('paddle', 'img/paddle.png');
 
@@ -51,6 +50,9 @@ var Breakout = new Phaser.Class({
 
         this.load.image('ball', 'img/ball.png');
         this.load.atlas('explosion', 'img/explosion.png', 'img/explosion.json');
+
+        this.load.image('title', 'img/title.png');
+
     },
 
     create: function ()
@@ -147,8 +149,6 @@ var Breakout = new Phaser.Class({
         
         this.scoreText = this.add.text(10, 570, 'SCORE: 0', { fontSize: '32px', fill: '#fff' });
         this.ballsText = this.add.text(600, 570, 'SHOTS: 3', { fontSize: '32px', fill: '#fff' });
-
-        this.resetBricks();
 
         this.title = this.add.image(400, 300, 'title');
     },
@@ -247,6 +247,9 @@ var Breakout = new Phaser.Class({
         // Hide the title screen
         this.title.visible = false;
 
+        // Build the bricks
+        this.resetBricks();
+
         // Call levelUp to kick things into gear
         this.startLevel();
     },
@@ -313,7 +316,7 @@ var Breakout = new Phaser.Class({
     hitPaddle: function (ball, paddle)
     {
         // This is the max angle of deflection
-        var maxAngle = 40.0;
+        var maxAngle = 50.0;
 
         // Calcuate where on the paddle the ball hit in a number from -1.0 to 1.0 representing percent
         var diff = ball.x - paddle.x;
@@ -434,8 +437,6 @@ var Breakout = new Phaser.Class({
 
     resetBricks : function() 
     {
-        this.resetBall();
-
         // Clear out all of the brick objects
         while (this.bricks.length)
         {
