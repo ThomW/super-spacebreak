@@ -132,6 +132,9 @@ ragdoll = function(x, y, scale, options) {
     var rightUpperLeg = Bodies.rectangle(x + 20 * scale, y + 57 * scale, 20 * scale, 40 * scale, rightLegOptions);
     var rightLowerLeg = Bodies.rectangle(x + 20 * scale, y + 97 * scale, 20 * scale, 60 * scale, rightLowerLegOptions);
 
+    // Stiffness [0-1] controls the elasticity of the limbs - 1 makes them not stretch apart
+    var defaultStiffness = 0.9;
+
     var chestToRightUpperArm = Constraint.create({
         bodyA: chest,
         pointA: {
@@ -143,7 +146,7 @@ ragdoll = function(x, y, scale, options) {
             y: -8 * scale
         },
         bodyB: rightUpperArm,
-        stiffness: 1,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -160,7 +163,7 @@ ragdoll = function(x, y, scale, options) {
             y: -8 * scale
         },
         bodyB: leftUpperArm,
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -177,7 +180,7 @@ ragdoll = function(x, y, scale, options) {
             y: -10 * scale
         },
         bodyB: leftUpperLeg,
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -194,7 +197,7 @@ ragdoll = function(x, y, scale, options) {
             y: -10 * scale
         },
         bodyB: rightUpperLeg,
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -211,7 +214,7 @@ ragdoll = function(x, y, scale, options) {
             x: 0,
             y: -25 * scale
         },
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -228,7 +231,7 @@ ragdoll = function(x, y, scale, options) {
             x: 0,
             y: -25 * scale
         },
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -245,7 +248,7 @@ ragdoll = function(x, y, scale, options) {
             x: 0,
             y: 5 * scale
         },
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -262,7 +265,7 @@ ragdoll = function(x, y, scale, options) {
             x: 0,
             y: -20 * scale
         },
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -279,7 +282,7 @@ ragdoll = function(x, y, scale, options) {
             x: 0,
             y: -20 * scale
         },
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
@@ -296,7 +299,7 @@ ragdoll = function(x, y, scale, options) {
             y: -35 * scale
         },
         bodyB: chest,
-        stiffness: 0.6,
+        stiffness: defaultStiffness,
         render: {
             visible: false
         }
