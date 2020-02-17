@@ -18,6 +18,7 @@ body {
 margin: 0;
 overflow: hidden;
 background-color: black;
+font-family: Helvetica, Arial, sans-serif;
 }
 #gamebox {
 margin: 0 auto;
@@ -31,10 +32,9 @@ height: 100%;
 }
 #landscape-warning {
     display: none;
-    background: black url(img/landscape-warning.png) 0 0 no-repeat;
-    background-size: contain;
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
+    text-align: center;
+    color: red;
+    padding: 10px;
 }
 @media only screen and (orientation:portrait) {
     #landscape-warning { display: block; }
@@ -44,14 +44,14 @@ height: 100%;
     #landscape-warning { display: none; }
     #gamebox { display: flex; }
 }
-
 </style>
 <script src="phaser.js" type="text/javascript"></script>
 <script src="phaser-matter-collision-plugin.js"></script>
-
 </head>
 <body>
-   <div id="landscape-warning"></div>
+   <div id="landscape-warning">
+    <h1>Your phone must be in landscape orientation to see the game</h1>
+   </div>
    <div id="gamebox"></div>
    <script src="ragdoll.js" type="text/javascript"></script>
    <script src="game.js" type="text/javascript"></script>
