@@ -34,7 +34,7 @@ ragdoll = function(x, y, scale, options) {
     }, options);
 
     var leftArmOptions = Common.extend({
-        label: 'left-arm',
+        label: 'upper-left-arm',
         collisionFilter: {
             group: Body.nextGroup(true)
         },
@@ -61,7 +61,7 @@ ragdoll = function(x, y, scale, options) {
     });
 
     var rightArmOptions = Common.extend({
-        label: 'right-arm',
+        label: 'upper-right-arm',
         collisionFilter: {
             group: Body.nextGroup(true)
         },
@@ -74,13 +74,14 @@ ragdoll = function(x, y, scale, options) {
     }, options);
 
     var rightLowerArmOptions = Common.extend({}, rightArmOptions, {
+        label: 'lower-right-arm',
         render: {
             fillStyle: '#E59B12'
         }
     });
 
     var leftLegOptions = Common.extend({
-        label: 'left-leg',
+        label: 'upper-left-leg',
         collisionFilter: {
             group: Body.nextGroup(true)
         },
@@ -93,13 +94,14 @@ ragdoll = function(x, y, scale, options) {
     }, options);
 
     var leftLowerLegOptions = Common.extend({}, leftLegOptions, {
+        label: 'lower-left-leg',
         render: {
             fillStyle: '#E59B12'
         }
     });
 
     var rightLegOptions = Common.extend({
-        label: 'right-leg',
+        label: 'upper-right-leg',
         collisionFilter: {
             group: Body.nextGroup(true)
         },
@@ -112,6 +114,7 @@ ragdoll = function(x, y, scale, options) {
     }, options);
 
     var rightLowerLegOptions = Common.extend({}, rightLegOptions, {
+        label: 'lower-right-leg',
         render: {
             fillStyle: '#E59B12'
         }
@@ -140,7 +143,7 @@ ragdoll = function(x, y, scale, options) {
             y: -8 * scale
         },
         bodyB: rightUpperArm,
-        stiffness: 0.6,
+        stiffness: 1,
         render: {
             visible: false
         }

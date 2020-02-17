@@ -20,6 +20,7 @@ var Breakout = new Phaser.Class({
         this.ball;
         this.stars;
         this.astronaut;
+        this.astronautImages = {};
     },
 
     preload: function ()
@@ -28,11 +29,15 @@ var Breakout = new Phaser.Class({
         this.load.image('paddle', 'img/paddle.png');
 
         this.load.image('astro-head', 'img/astro-head.png');
-        this.load.image('astro-torso', 'img/astro-torso.png');
-        this.load.image('astro-upper-arm', 'img/astro-upper-arm.png');
-        this.load.image('astro-lower-arm', 'img/astro-lower-arm.png');
-        this.load.image('astro-upper-leg', 'img/astro-upper-leg.png');
-        this.load.image('astro-lower-leg', 'img/astro-lower-leg.png');
+        this.load.image('astro-chest', 'img/astro-chest.png');
+        this.load.image('astro-upper-left-arm', 'img/astro-upper-left-arm.png');
+        this.load.image('astro-lower-left-arm', 'img/astro-lower-left-arm.png');
+        this.load.image('astro-upper-left-leg', 'img/astro-upper-left-leg.png');
+        this.load.image('astro-lower-left-leg', 'img/astro-lower-left-leg.png');
+        this.load.image('astro-upper-right-arm', 'img/astro-upper-right-arm.png');
+        this.load.image('astro-lower-right-arm', 'img/astro-lower-right-arm.png');
+        this.load.image('astro-upper-right-leg', 'img/astro-upper-right-leg.png');
+        this.load.image('astro-lower-right-leg', 'img/astro-lower-right-leg.png');
 
         for (var i = 0; i < 5; i++) {
             this.load.image('brick' + i, 'img/brick-' + i + '.png');
@@ -94,30 +99,38 @@ var Breakout = new Phaser.Class({
 
         this.bricks = [];
 
-        this.ball = this.add.sprite(400, 480, 'ball');
+        this.ball = this.matter.add.image(400, 480, 'ball').setStatic(true);
         this.setVelocity(this.ball, 'x', 0.0);
         this.setVelocity(this.ball, 'y', 0.0);
 
         this.stopBall();
         this.ball.setData('onPaddle', true);
 
-        // The paddle is a matter physics object so that the astronaut can slam into it
-        this.paddle = this.matter.add.image(400, 500, 'paddle').setStatic(true);
+        this.paddle = this.add.image(400, 500, 'paddle');
 
         // Instantiate our astronaut
-        this.astronaut = new ragdoll(400, 600, 0.4);
+        this.astronaut = new ragdoll(400, 600, 0.7);
         this.matter.world.add(this.astronaut);
 
         for (var i = 0; i < this.astronaut.bodies.length; i++) {
+           
             body = this.astronaut.bodies[i];
+            
+            // Attach the astronaut's hand to the ball and set constraints
             if (body.label == 'left-hand') {
-                this.matter.add.constraint(this.paddle, body, 10, 1);
+                this.matter.add.constraint(this.ball, body, 0.1, 1);
                 break;
             }
+
+            // Load in pieces to make up the astronaut
+            var am = this.matter.add.image(0, 0, 'astro-' + body.label);
+            am.body = body;
+
+            this.astronautImages[body.label] = am;            
         }
 
         // There's no x gravity and gravity in the positive Y direction
-        this.matter.world.setGravity(0, 0, 0.005);
+        this.matter.world.setGravity(0, 0, 0);
 
         //  Input events
         this.input.on('pointermove', function (pointer) {
@@ -433,6 +446,16 @@ var Breakout = new Phaser.Class({
             lowestBrickY = Math.min(this.bricks[i].y, lowestBrickY);
         }
         */
+
+        /* Total kludge to tie astronaut bodies to images */
+        for (var i = 0; i < this.astronaut.bodies.length; i++) {
+            body = this.astronaut.bodies[i];
+            if (body.key in this.astronautImages) {
+                this.astronautImages[body.label].body = body;
+            }
+        }
+
+
     },
 
     resetBricks : function() 
@@ -533,7 +556,7 @@ var config = {
     physics: {
         default: 'matter',
         matter: {
-            debug: true
+            debug: false
         }
     }
 };
