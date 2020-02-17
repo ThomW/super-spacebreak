@@ -272,8 +272,8 @@ var Breakout = new Phaser.Class({
     // based on the level the player is on, and the highest row of blocks hit on this level.
     getCurrentVelocity: function()
     {
-        var ret = this.ballDefaultVelocity + ((this.level - 1) * 0.75) + (this.highestRowHit * 0.5);
-        // console.log('Velocity: ' + ret);
+        var ret = this.ballDefaultVelocity + ((this.level - 1) * 1) + (this.highestRowHit * 0.5);
+        console.log('Velocity: ' + ret);
         return ret;
     },
 
