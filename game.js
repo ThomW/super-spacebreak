@@ -13,7 +13,7 @@ var Breakout = new Phaser.Class({
 
         this.gameState = this.GS_GAME_OVER;
 
-        this.score;
+        this._score;
         this._remainingBalls = 0;
         this.level;
         this.highestRowHit;
@@ -168,7 +168,7 @@ var Breakout = new Phaser.Class({
         }, this);
         
         this.scoreText = this.add.bitmapText(10, 560, '8bit', '', 32).setOrigin(0).setLeftAlign();
-        this.scoreText.setText('SCORE: 0');
+        this.setScore(0);
 
         this.ballsText = this.add.bitmapText(800, 560, '8bit', '', 32).setOrigin(1, 0).setRightAlign();
         this.setRemainingBalls(0);
@@ -234,7 +234,7 @@ var Breakout = new Phaser.Class({
             brick.destroy();
             this.bricks = this.arrayRemove(this.bricks, brick);
 
-            this.updateScore(1);
+            this.setScore(1);
 
             if (this.bricks.length === 0)
             {
@@ -265,7 +265,7 @@ var Breakout = new Phaser.Class({
 
         // Reset variables at the start of the game
         this.level = 1;
-        this.score = 0;
+        this.setScore(0);
         
         this.setRemainingBalls(3);
 
@@ -515,12 +515,6 @@ var Breakout = new Phaser.Class({
         return Math.round(Math.random() * (max - min) + min);
     },
 
-    updateScore: function(amt)
-    {
-        this.score += amt;
-        this.scoreText.setText('SCORE: ' + this.score);
-    },
-
     endGame: function() {
 
         this.gameState = this.GS_GAME_OVER;
@@ -575,6 +569,13 @@ var Breakout = new Phaser.Class({
     },
     decrementRemainingBalls: function() {
         this.setRemainingBalls(this._remainingBalls - 1);
+    },
+    getScore: function() {
+        return this._score;
+    },
+    setScore: function(score) {
+        this._score = score;
+        this.scoreText.setText('SCORE: ' + score);
     }
 
 });
