@@ -24,4 +24,4 @@ I'd done all I could from the couch, and went downstairs to wrap things up. In t
 
 I used fonts from https://atariage.com/2600/archives/AtariFonts/index.html?SystemID=2600 for my fake box art and some of the in-game text.
 
-
+I used [Bitmap Font Generator](https://www.angelcode.com/products/bmfont/) for any font conversion I had to do since it handled creating the XML file that Phaser.io wants for using bitmap fonts

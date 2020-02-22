@@ -8,7 +8,10 @@ var Breakout = new Phaser.Class({
     {
         Phaser.Scene.call(this, { key: 'breakout' });
 
-        this.gameOver = true;
+        this.GS_GAME_OVER = 0;
+        this.GS_GAME_ACTIVE = 1;
+
+        this.gameState = this.GS_GAME_OVER;
 
         this.score;
         this.remainingBalls;
@@ -25,6 +28,8 @@ var Breakout = new Phaser.Class({
 
     preload: function ()
     {
+        this.load.bitmapFont('8bit', 'fonts/8bit.png', 'fonts/8bit.xml');
+
         this.load.image('background', 'img/background.png');
         this.load.image('paddle', 'img/paddle.png');
 
@@ -151,7 +156,7 @@ var Breakout = new Phaser.Class({
             {
                 this.ball.setData('onPaddle', false);
 
-                if (this.gameOver) {
+                if (this.gameState == this.GS_GAME_OVER) {
                     this.startGame();
                 } else {
                     this.startLevel();
@@ -160,8 +165,14 @@ var Breakout = new Phaser.Class({
 
         }, this);
         
-        this.scoreText = this.add.text(10, 570, 'SCORE: 0', { fontSize: '32px', fill: '#fff' });
-        this.ballsText = this.add.text(600, 570, 'SHOTS: 3', { fontSize: '32px', fill: '#fff' });
+        this.scoreText = this.add.bitmapText(10, 560, '8bit', '', 32).setOrigin(0).setLeftAlign();
+        this.scoreText.setText('SCORE: 0');
+
+        this.ballsText = this.add.bitmapText(800, 560, '8bit', '', 32).setOrigin(1, 0).setRightAlign();
+        this.ballsText.setText('SHOTS: 3');
+
+        this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
+        this.centeredText.setText(['Click to begin']);
 
         this.title = this.add.image(400, 300, 'title');
     },
@@ -255,7 +266,7 @@ var Breakout = new Phaser.Class({
         this.score = 0;
         this.remainingBalls = 3;
         this.highestRowHit = 0;
-        this.gameOver = false;
+        this.gameState = this.GS_GAME_ACTIVE;
 
         // Hide the title screen
         this.title.visible = false;
@@ -505,7 +516,9 @@ var Breakout = new Phaser.Class({
 
     endGame: function() {
 
-        this.gameOver = true;
+
+
+        this.gameState = this.GS_GAME_OVER;
 
         this.stopBall();
     },
