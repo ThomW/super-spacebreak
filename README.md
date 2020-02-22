@@ -13,15 +13,20 @@ I chose [Super Breakout](http://www.atarimania.com/game-atari-2600-vcs-super-bre
 
 # Making the Sausage
 
-I started with the source code of [Phaser.io 3's Breakout Sample Game](https://phaser.io/examples/v3/view/games/breakout/breakout), and flipped the game upside down just to see how it might work. 
+This was supposed to be a quick weekend project, but things quickly blossomed out of scope when the astronaut rag doll turned out to be more difficult to create than I thought. Phaser.io now supports [Matter.js](https://brm.io/matter-js/) out of the box, so I went with that instead of turning to Box2d as I did with [Air Sea Golf](http://www.lmnopc.com/air-sea-golf/).
 
+Since I was planning on this being a throwaway, I leaned heavily on the code I had written for [UFO Destruction](http://lmnopc.com/ufo/) to get the basic game working, but that didn't do a bunch of things -- you have to refresh to restart the game, it doesn't tell you to turn your phone sideways - all the little things you'd add if you had enough time, but didn't with that project.  ANother huge timesink was the change to Matter.js;  the game code [straight up broke](http://lmnopc.com/games/super-spacebreak/index.html) after the switch. I wound up writing all the physics code for the brick-breaker game myself, but I later learned that you can mix and match physics engines in Phaser, so that wound up being a huge waste of time.
 
-At this point, the game was largely playable. I moved things around so that level resets would work, added the dumb screen shake that needs to be toned down, added score and balls remaining displays, then grabbed my iPad and drew the background using [Procreate](https://procreate.art/ipad) in like 10 minutes.  It took me longer to get images on and off my iPad than it took to draw that background in case you're wondering -- haha.
+Programs used: 
 
-I'd done all I could from the couch, and went downstairs to wrap things up. In the final hour, I created the sole sound effect using [sfxr](https://github.com/grimfang4/sfxr), added some found code that helped scale the game up to fill the entire screen, created the title screen, final testing, then uploaded the project to the game jam [itch.io](https://thomw.itch.io/ufo-destruction). 
+* CorelDraw 9
+* [Paint.net](https://www.getpaint.net/)
+* [Procreate](https://apps.apple.com/us/app/procreate/id425073498)
+* [sfxr](https://github.com/grimfang4/sfxr)
+* [Visual Studio Code](https://code.visualstudio.com/)
+* [Reason 10](https://www.reasonstudios.com/en/reason/new)
+* [Bitmap Font Generator](https://www.angelcode.com/products/bmfont/)
 
 # Credits
 
-I used fonts from https://atariage.com/2600/archives/AtariFonts/index.html?SystemID=2600 for my fake box art and some of the in-game text.
-
-I used [Bitmap Font Generator](https://www.angelcode.com/products/bmfont/) for any font conversion I had to do since it handled creating the XML file that Phaser.io wants for using bitmap fonts
+* I used fonts from [AtariAge.com](https://atariage.com/2600/archives/AtariFonts/index.html?SystemID=2600) for my fake box art and some of the in-game text.
