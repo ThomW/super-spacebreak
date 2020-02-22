@@ -8,13 +8,13 @@ var Breakout = new Phaser.Class({
     {
         Phaser.Scene.call(this, { key: 'breakout' });
 
-        this.GS_GAME_OVER = 0;
-        this.GS_GAME_ACTIVE = 1;
+        this.GS_GAME_OVER = "GAME OVER";
+        this.GS_GAME_ACTIVE = "GAME ACTIVE";
 
         this.gameState = this.GS_GAME_OVER;
 
         this.score;
-        this.remainingBalls;
+        this._remainingBalls = 0;
         this.level;
         this.highestRowHit;
 
@@ -152,13 +152,15 @@ var Breakout = new Phaser.Class({
 
         this.input.on('pointerup', function (pointer) {
 
-            if (this.ball.getData('onPaddle'))
-            {
-                this.ball.setData('onPaddle', false);
+            // If the game's over, restart the game
+            if (this.gameState == this.GS_GAME_OVER) {
+                this.startGame();
+            } 
+            // If the game is active and the ball's on the paddle, release the ball
+            else if (this.gameState == this.GS_GAME_ACTIVE) {
 
-                if (this.gameState == this.GS_GAME_OVER) {
-                    this.startGame();
-                } else {
+                if (this.ball.getData('onPaddle')) {
+                    this.ball.setData('onPaddle', false);
                     this.startLevel();
                 }
             }
@@ -169,9 +171,9 @@ var Breakout = new Phaser.Class({
         this.scoreText.setText('SCORE: 0');
 
         this.ballsText = this.add.bitmapText(800, 560, '8bit', '', 32).setOrigin(1, 0).setRightAlign();
-        this.ballsText.setText('SHOTS: 3');
+        this.setRemainingBalls(0);
 
-        this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
+        this.centeredText = this.add.bitmapText(400, 300, '8bit', 'default text', 32).setOrigin(0.5).setCenterAlign();
         this.centeredText.setText(['Click to begin']);
 
         this.title = this.add.image(400, 300, 'title');
@@ -243,11 +245,9 @@ var Breakout = new Phaser.Class({
 
     resetBall: function ()
     {
-        if (this.remainingBalls > 0) {
+        if (this.getRemainingBalls() > 0) {
 
-            this.remainingBalls -= 1;
-
-            this.ballsText.setText('SHOTS: ' + this.remainingBalls);
+            this.decrementRemainingBalls();
 
             this.stopBall();
 
@@ -261,21 +261,25 @@ var Breakout = new Phaser.Class({
 
     startGame: function()
     {
+        console.log('welcome to startGame');
+
         // Reset variables at the start of the game
         this.level = 1;
         this.score = 0;
-        this.remainingBalls = 3;
+        
+        this.setRemainingBalls(3);
+
+        this.resetBall();
+        
         this.highestRowHit = 0;
         this.gameState = this.GS_GAME_ACTIVE;
 
-        // Hide the title screen
+        // Hide the title screen and centered text
         this.title.visible = false;
+        this.centeredText.visible = false;
 
         // Build the bricks
         this.resetBricks();
-
-        // Call levelUp to kick things into gear
-        this.startLevel();
     },
 
     // This basically returns the current value we're using for the hypotenuse of our angles.
@@ -309,6 +313,8 @@ var Breakout = new Phaser.Class({
 
     startLevel: function()
     {
+        this.ball.setData('onPaddle', false);
+
         // Calcuate angle -- remembering that straight up is 90deg
         var angle = this.rnd(110, 130);
 
@@ -396,9 +402,10 @@ var Breakout = new Phaser.Class({
         this.ball.x += this.getVelocity(this.ball, 'x');
         this.ball.y += this.getVelocity(this.ball, 'y');
 
-        if (this.ball.y > 600)
+        // Let the ball go way out of bounds before resetting
+        if (this.ball.y > 800)
         {
-            if (this.remainingBalls > 0) {
+            if (this.getRemainingBalls() > 0) {
                 this.resetBall();
             } else {
                 this.endGame();
@@ -474,7 +481,7 @@ var Breakout = new Phaser.Class({
         // Clear out all of the brick objects
         while (this.bricks.length)
         {
-            this.matter.world.remove(this.bricks[0]);
+            this.bricks[0].destroy();
             this.bricks.shift();
         }
 
@@ -516,9 +523,10 @@ var Breakout = new Phaser.Class({
 
     endGame: function() {
 
-
-
         this.gameState = this.GS_GAME_OVER;
+
+        this.centeredText.setText(['GAME OVER', '', 'CLICK TO START OVER']);
+        this.centeredText.visible = true;
 
         this.stopBall();
     },
@@ -557,7 +565,18 @@ var Breakout = new Phaser.Class({
     },
     getVelocity: function(obj, axis) {
         return obj.getData(axis + 'v');
+    },
+    getRemainingBalls: function() {
+        return this._remainingBalls;
+    },
+    setRemainingBalls: function(balls) {
+        this._remainingBalls = balls;
+        this.ballsText.setText('SHOTS: ' + this._remainingBalls);
+    },
+    decrementRemainingBalls: function() {
+        this.setRemainingBalls(this._remainingBalls - 1);
     }
+
 });
 
 var config = {
