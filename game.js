@@ -415,16 +415,15 @@ var Breakout = new Phaser.Class({
 
     update: function (time, delta)
     {
-        this.centeredText.visible = true;
-        this.centeredText.setText(['delta: ' + delta.toFixed(2)]);
+        var velocityAdj = delta / 8;
 
         for (var i = 0; i < this.stars.length; i++)
         {
             var star = this.stars[i];
             var xv = this.getVelocity(star, 'x');
             var yv = this.getVelocity(star, 'y');
-            star.x += xv;
-            star.y += yv;
+            star.x += xv * velocityAdj;
+            star.y += yv * velocityAdj;
 
             if (star.x < 0 || star.x > 800 || star.y < 0 || star.y > 600) {
                 star.x = 400;
@@ -432,8 +431,8 @@ var Breakout = new Phaser.Class({
             }
         }
 
-        this.ball.x += this.getVelocity(this.ball, 'x');
-        this.ball.y += this.getVelocity(this.ball, 'y');
+        this.ball.x += this.getVelocity(this.ball, 'x') * velocityAdj;
+        this.ball.y += this.getVelocity(this.ball, 'y') * velocityAdj;
 
         // Let the ball go way out of bounds before resetting
         if (this.ball.y > 800)
