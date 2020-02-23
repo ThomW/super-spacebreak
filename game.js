@@ -415,6 +415,9 @@ var Breakout = new Phaser.Class({
 
     update: function (time, delta)
     {
+        this.centeredText.visible = true;
+        this.centeredText.setText(['delta: ' + delta.toFixed(2)]);
+
         for (var i = 0; i < this.stars.length; i++)
         {
             var star = this.stars[i];
