@@ -44,6 +44,8 @@ var Breakout = new Phaser.Class({
         this.load.image('astro-upper-right-leg', 'img/astro-upper-right-leg.png');
         this.load.image('astro-lower-right-leg', 'img/astro-lower-right-leg.png');
 
+        this.load.image('brick-glow', 'img/brick-glow.png');
+
         for (var i = 0; i < 5; i++) {
             this.load.image('brick' + i, 'img/brick-' + i + '.png');
 
@@ -229,6 +231,17 @@ var Breakout = new Phaser.Class({
                 this.highestRowHit = brickRow;
                 this.calculateNewBallVelocity();
             }
+
+            // Make the brick flash white and fade when it's destroyed
+            var glow = this.add.image(brick.x, brick.y, 'brick-glow');
+            var tween = this.tweens.add({
+                targets: glow,
+                alpha: 0,
+                delay: 125,
+                duration: 250,
+                repeat: 0,
+                onComplete: function() { glow.destroy(); }
+            });
 
             // Destroy and remove the brick from the collection
             brick.destroy();
