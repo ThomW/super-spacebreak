@@ -134,6 +134,13 @@ var Breakout = new Phaser.Class({
             this.astronautImages[body.label] = am;            
         }
 
+        // Tie the astronaut bodies to their related images
+        for (var i = 0; i < this.astronaut.bodies.length; i++) {
+            if (this.astronaut.bodies[i].key in this.astronautImages) {
+                this.astronautImages[body.label].body = this.astronaut.bodies[i];
+            }
+        }
+
         // There's no x gravity and gravity in the positive Y direction
         this.matter.world.setGravity(0, 0, 0);
 
@@ -475,15 +482,6 @@ var Breakout = new Phaser.Class({
             lowestBrickY = Math.min(this.bricks[i].y, lowestBrickY);
         }
         */
-
-        /* Total kludge to tie astronaut bodies to images */
-        for (var i = 0; i < this.astronaut.bodies.length; i++) {
-            body = this.astronaut.bodies[i];
-            if (body.key in this.astronautImages) {
-                this.astronautImages[body.label].body = body;
-            }
-        }
-
 
     },
 
