@@ -2,9 +2,7 @@ var Breakout = new Phaser.Class({
 
     Extends: Phaser.Scene,
 
-    initialize:
-
-    function Breakout ()
+    initialize: function Breakout ()
     {
         Phaser.Scene.call(this, { key: 'breakout' });
 
@@ -247,7 +245,7 @@ var Breakout = new Phaser.Class({
             brick.destroy();
             this.bricks = this.arrayRemove(this.bricks, brick);
 
-            this.setScore(1);
+            this.increaseScore(1);
 
             if (this.bricks.length === 0)
             {
@@ -589,6 +587,9 @@ var Breakout = new Phaser.Class({
     setScore: function(score) {
         this._score = score;
         this.scoreText.setText('SCORE: ' + score);
+    },
+    increaseScore: function(amt) {
+        this.setScore(this._score + amt);
     }
 
 });
