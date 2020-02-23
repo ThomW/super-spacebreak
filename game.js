@@ -22,6 +22,8 @@ var Breakout = new Phaser.Class({
         this.stars;
         this.astronaut;
         this.astronautImages = {};
+
+        this.scanlines;
     },
 
     preload: function ()
@@ -29,6 +31,7 @@ var Breakout = new Phaser.Class({
         this.load.bitmapFont('8bit', 'fonts/8bit.png', 'fonts/8bit.xml');
 
         this.load.image('background', 'img/background.png');
+        this.load.image('scanlines', 'img/scanlines.png');
         this.load.image('paddle', 'img/paddle.png');
 
         this.load.image('astro-head', 'img/astro-head.png');
@@ -63,10 +66,17 @@ var Breakout = new Phaser.Class({
 
         this.load.image('title', 'img/title.png');
 
+        // Load shaders
+        this.crtPipeline = this.game.renderer.addPipeline('crtgeom', new CrtGeomPipeline(this.game));
     },
 
     create: function ()
     {
+        // Shader setup
+        var cam = this.cameras.main;
+        cam.setRenderToTexture(this.crtPipeline);
+        cam.setPipeline('crtgeom');
+
         this.ballDefaultVelocity = 5;
 
         this.soundBrickHit = [];
@@ -182,6 +192,8 @@ var Breakout = new Phaser.Class({
 
         this.centeredText = this.add.bitmapText(400, 300, '8bit', 'default text', 32).setOrigin(0.5).setCenterAlign();
         this.centeredText.setText(['Click to begin']);
+
+        this.scanlines = this.add.image(400, 300, 'scanlines');
 
         this.title = this.add.image(400, 300, 'title');
     },
@@ -401,7 +413,7 @@ var Breakout = new Phaser.Class({
         this.soundPaddleHit.play();
     },
 
-    update: function ()
+    update: function (time, delta)
     {
         for (var i = 0; i < this.stars.length; i++)
         {
@@ -515,8 +527,10 @@ var Breakout = new Phaser.Class({
             }
         }
 
-        // Bring the ball to the top of the z-order
+        // Fix the depth sorting
         this.ball.setDepth(1);
+        this.scanlines.setDepth(1);
+        this.title.setDepth(1);
     },
 
     // Returns an integer random number within our min/max range
@@ -593,7 +607,7 @@ var Breakout = new Phaser.Class({
 });
 
 var config = {
-    type: Phaser.AUTO,
+    type: Phaser.WEBGL,
     width: 800,
     height: 600,
     parent: 'gamebox',
