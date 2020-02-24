@@ -6,13 +6,16 @@ var Breakout = new Phaser.Class({
     {
         Phaser.Scene.call(this, { key: 'breakout' });
 
+        this.GS_GAME_INIT = "INIT";  // This is the state the first time the game is started
         this.GS_GAME_OVER = "GAME OVER";
         this.GS_GAME_ACTIVE = "GAME ACTIVE";
+        this.GS_GAME_INTRO = "INTRO";
 
-        this.gameState = this.GS_GAME_OVER;
+        this._gameState = this.GS_GAME_INIT;
 
         this._score;
         this._remainingBalls = 0;
+
         this.level;
         this.highestRowHit;
 
@@ -24,6 +27,8 @@ var Breakout = new Phaser.Class({
         this.astronautImages = {};
 
         this.scanlines;
+
+        this.introText;
     },
 
     preload: function ()
@@ -169,33 +174,63 @@ var Breakout = new Phaser.Class({
 
         this.input.on('pointerup', function (pointer) {
 
-            // If the game's over, restart the game
-            if (this.gameState == this.GS_GAME_OVER) {
-                this.startGame();
-            } 
-            // If the game is active and the ball's on the paddle, release the ball
-            else if (this.gameState == this.GS_GAME_ACTIVE) {
+            switch (this.getGameState()) {
 
-                if (this.ball.getData('onPaddle')) {
-                    this.ball.setData('onPaddle', false);
-                    this.startLevel();
-                }
+                case this.GS_GAME_INIT:
+                    this.showIntro();
+                    break;
+                
+                case this.GS_GAME_OVER:
+                    this.startGame();
+                    break;
+
+                case this.GS_GAME_ACTIVE:
+                    if (this.ball.getData('onPaddle')) {
+                        this.ball.setData('onPaddle', false);
+                        this.startLevel();
+                    }    
+                    break;
+                
+                default:
+                    console.log('UNKNOWN GAME STATE IN POINTERUP: ' + this.getGameState());
+                    
             }
 
         }, this);
         
         this.scoreText = this.add.bitmapText(10, 560, '8bit', '', 32).setOrigin(0).setLeftAlign();
         this.setScore(0);
+        this.scoreText.visible = false;
 
         this.ballsText = this.add.bitmapText(800, 560, '8bit', '', 32).setOrigin(1, 0).setRightAlign();
         this.setRemainingBalls(0);
+        this.ballsText.visible = false;
 
-        this.centeredText = this.add.bitmapText(400, 300, '8bit', 'default text', 32).setOrigin(0.5).setCenterAlign();
+        this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
         this.centeredText.setText(['Click to begin']);
 
+        this.introText = this.add.bitmapText(400, 300, '8bit', '', 24).setOrigin(0.5).setLeftAlign();
+        this.introText.setText([
+            'After the events in 1977 at'
+            , 'Devils Tower Wyoming, the'
+            , 'government sends an astronaut'
+            , 'on a lonely mission to find'
+            , 'the aliens, and discover the'
+            , 'fate of the travellers that'
+            , 'left Earth on the visitors\''
+            , 'mothership.'
+            , ''
+            , 'This is the story of what'
+            , 'happened to that brave'
+            , 'astronaut.'
+            , ''
+            , 'CLICK TO BEGIN...'
+        ]);
+        this.introText.visible = false;
+        
         this.scanlines = this.add.image(400, 300, 'scanlines');
 
-        this.title = this.add.image(400, 300, 'title');
+        this.title = this.add.image(400, 270, 'title');
     },
 
     hitBrick: function (brick)
@@ -289,9 +324,40 @@ var Breakout = new Phaser.Class({
         }
     },
 
+    // Kicks off the intro screen
+    showIntro: function() {
+        
+        // Fade the centered text out
+        this.tweens.add({
+            targets: this.centeredText,
+            alpha: 0,
+            ease: 'Power1',
+            duration: 500
+        });
+
+        // Hide the introText and peg its alpha to zero
+        this.introText.alpha = 0;
+        this.introText.visible = true;
+
+        var tweenIntroTextFadeIn = this.tweens.add({
+            targets: this.introText,
+            alpha: 1.0,
+            ease: 'Power1',
+            duration: 1000,
+            onComplete: this.introTextFadeInComplete,
+            onCompleteParams: [this.scene]
+        });
+
+        // Set gamestate to game over so that the next click starts the game
+        this.setGameState(this.GS_GAME_OVER);
+    
+    },
+
     startGame: function()
     {
         console.log('welcome to startGame');
+
+        this.introText.visible = false;
 
         // Reset variables at the start of the game
         this.level = 1;
@@ -302,7 +368,7 @@ var Breakout = new Phaser.Class({
         this.resetBall();
         
         this.highestRowHit = 0;
-        this.gameState = this.GS_GAME_ACTIVE;
+        this.setGameState(this.GS_GAME_ACTIVE);
 
         // Hide the title screen and centered text
         this.title.visible = false;
@@ -525,6 +591,16 @@ var Breakout = new Phaser.Class({
                 brick.visible = true;
                 brick.setData('row', 4 - i); // Flip the sounds
 
+                // Fade bricks in row by row
+                brick.alpha = 0;
+                this.tweens.add({
+                    targets: brick,
+                    alpha: 1,
+                    delay: 200 * i,
+                    duration: 500,
+                    repeat: 0
+                });
+    
                 this.bricks.push(brick);
             }
         }
@@ -542,10 +618,18 @@ var Breakout = new Phaser.Class({
 
     endGame: function() {
 
-        this.gameState = this.GS_GAME_OVER;
+        this.setGameState(this.GS_GAME_OVER);
 
         this.centeredText.setText(['GAME OVER', '', 'CLICK TO START OVER']);
         this.centeredText.visible = true;
+
+        // Fade the centered text in
+        this.tweens.add({
+            targets: this.centeredText,
+            alpha: 1,
+            ease: 'Power1',
+            duration: 1000
+        });
 
         this.stopBall();
     },
@@ -591,6 +675,7 @@ var Breakout = new Phaser.Class({
     setRemainingBalls: function(balls) {
         this._remainingBalls = balls;
         this.ballsText.setText('SHOTS: ' + this._remainingBalls);
+        this.ballsText.visible = true;
     },
     decrementRemainingBalls: function() {
         this.setRemainingBalls(this._remainingBalls - 1);
@@ -601,9 +686,18 @@ var Breakout = new Phaser.Class({
     setScore: function(score) {
         this._score = score;
         this.scoreText.setText('SCORE: ' + score);
+        this.scoreText.visible = true;
     },
     increaseScore: function(amt) {
         this.setScore(this._score + amt);
+    },
+    getGameState: function() {
+        return this._gameState;
+    },
+    setGameState: function(gameState) {
+        this._gameState = gameState;
+
+        // Do stuff based on the new gameState value
     }
 
 });
