@@ -77,7 +77,7 @@ var Breakout = new Phaser.Class({
         cam.setRenderToTexture(this.crtPipeline);
         cam.setPipeline('crtgeom');
 
-        this.ballDefaultVelocity = 5;
+        this.ballDefaultVelocity = 3;
 
         this.soundBrickHit = [];
         for (var i = 0; i < 5; i++) {
