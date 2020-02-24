@@ -14,7 +14,7 @@ var CrtGeomPipeline = new Phaser.Class({
             uniform sampler2D uMainSampler;
             varying vec2 outTexCoord;
 
-            #define distortion 0.7
+            #define distortion 0.3
 
             vec2 radialDistortion(vec2 coord) {
               vec2 cc = coord - vec2(0.5);
