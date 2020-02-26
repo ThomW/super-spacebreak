@@ -11,6 +11,8 @@ I love the artwork Atari's artists would crank out for the box art of their 2600
 
 I chose [Super Breakout](http://www.atarimania.com/game-atari-2600-vcs-super-breakout_7848.html). It's a super simple game, but the box art includes an astronaut that doesn't make an appearance in the game whatsoever. I'm trying to correct that. I hope you find my take as dumb and funny as I do.
 
+[Close Encounters of the Third Kind](https://www.youtube.com/watch?v=S4PYI6TzqYk) left a pretty big impression on me as a kid, and when I was thinking about what the bricks might be, I remembered the organ from the climax of that movie where the mothership is attempting to communicate with the researchers at Devils Tower -- that's where the idea of making the bricks' tones different and having them light up when struck came from.
+
 # Making the Sausage
 
 This was supposed to be a quick weekend project, but things quickly blossomed out of scope when the astronaut rag doll turned out to be more difficult to create than I thought. Phaser.io now supports [Matter.js](https://brm.io/matter-js/) out of the box, so I went with that instead of turning to Box2d as I did with [Air Sea Golf](http://www.lmnopc.com/air-sea-golf/).
@@ -22,6 +24,7 @@ Programs used:
 * CorelDraw 9
 * [Paint.net](https://www.getpaint.net/)
 * [Procreate](https://apps.apple.com/us/app/procreate/id425073498)
+* [Inkscape](https://inkscape.org/)
 * [sfxr](https://github.com/grimfang4/sfxr)
 * [Visual Studio Code](https://code.visualstudio.com/)
 * [Reason 10](https://www.reasonstudios.com/en/reason/new)

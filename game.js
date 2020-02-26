@@ -10,6 +10,9 @@ var Breakout = new Phaser.Class({
         this.GS_GAME_OVER = "GAME OVER";
         this.GS_GAME_ACTIVE = "GAME ACTIVE";
         this.GS_GAME_INTRO = "INTRO";
+        this.GS_ENDGAME = 'ENDGAME';
+
+        this.fadeSpeedMs = 500;
 
         this._gameState = this.GS_GAME_INIT;
 
@@ -60,6 +63,8 @@ var Breakout = new Phaser.Class({
                 'audio/hit-row' + i + '.mp3'
             ]);
         }
+
+        this.load.image('endgame', 'img/endgame.png');
 
         this.load.audio('paddle_hit', [
             'audio/hit-paddle.ogg',
@@ -179,7 +184,8 @@ var Breakout = new Phaser.Class({
                 case this.GS_GAME_INIT:
                     this.showIntro();
                     break;
-                
+
+                case this.GS_GAME_INTRO:
                 case this.GS_GAME_OVER:
                     this.startGame();
                     break;
@@ -206,9 +212,6 @@ var Breakout = new Phaser.Class({
         this.setRemainingBalls(0);
         this.ballsText.visible = false;
 
-        this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
-        this.centeredText.setText(['Click to begin']);
-
         this.introText = this.add.bitmapText(400, 300, '8bit', '', 24).setOrigin(0.5).setLeftAlign();
         this.introText.setText([
             'After the events in 1977 at'
@@ -227,6 +230,16 @@ var Breakout = new Phaser.Class({
             , 'CLICK TO BEGIN...'
         ]);
         this.introText.visible = false;
+
+        // Add endgame image
+        this.endgameOrigin = new Phaser.Geom.Point(-200, 500);
+        this.endgame = this.add.image(this.endgameOrigin.x, this.endgameOrigin.y, 'endgame');
+        this.endgame.angle = 15;
+        this.endgame.visible = false;
+
+        this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
+        this.centeredText.visible = false;
+        this.setCenteredText(['Click to begin']);
         
         this.scanlines = this.add.image(400, 300, 'scanlines');
 
@@ -326,14 +339,10 @@ var Breakout = new Phaser.Class({
 
     // Kicks off the intro screen
     showIntro: function() {
+
+        this.setGameState(this.GS_GAME_INTRO);
         
-        // Fade the centered text out
-        this.tweens.add({
-            targets: this.centeredText,
-            alpha: 0,
-            ease: 'Power1',
-            duration: 500
-        });
+        this.hideCenteredText();
 
         // Hide the introText and peg its alpha to zero
         this.introText.alpha = 0;
@@ -347,10 +356,6 @@ var Breakout = new Phaser.Class({
             onComplete: this.introTextFadeInComplete,
             onCompleteParams: [this.scene]
         });
-
-        // Set gamestate to game over so that the next click starts the game
-        this.setGameState(this.GS_GAME_OVER);
-    
     },
 
     startGame: function()
@@ -370,9 +375,21 @@ var Breakout = new Phaser.Class({
         this.highestRowHit = 0;
         this.setGameState(this.GS_GAME_ACTIVE);
 
+        this.fadeIn(this.paddle);
+
         // Hide the title screen and centered text
-        this.title.visible = false;
-        this.centeredText.visible = false;
+        this.fadeOut(this.title);
+        this.fadeOut(this.centeredText);
+
+        // Make endgame fade in a dramatic fashion
+        this.tweens.add({
+            targets: this.endgame
+            , scale: 10
+            , ease: 'Power1'
+            , duration: 2200
+        })
+        this.fadeOut(this.endgame, 2000);
+
 
         // Build the bricks
         this.resetBricks();
@@ -501,7 +518,7 @@ var Breakout = new Phaser.Class({
         this.ball.y += this.getVelocity(this.ball, 'y') * velocityAdj;
 
         // Let the ball go way out of bounds before resetting
-        if (this.ball.y > 800)
+        if (this.ball.y > 800 && this.getGameState() == this.GS_GAME_ACTIVE)
         {
             if (this.getRemainingBalls() > 0) {
                 this.resetBall();
@@ -607,8 +624,11 @@ var Breakout = new Phaser.Class({
 
         // Fix the depth sorting
         this.ball.setDepth(1);
-        this.scanlines.setDepth(1);
-        this.title.setDepth(1);
+        this.endgame.setDepth(2);
+        this.centeredText.setDepth(3);
+        this.scoreText.setDepth(4);
+        this.scanlines.setDepth(10);
+        this.title.setDepth(100);
     },
 
     // Returns an integer random number within our min/max range
@@ -618,21 +638,70 @@ var Breakout = new Phaser.Class({
 
     endGame: function() {
 
-        this.setGameState(this.GS_GAME_OVER);
-
-        this.centeredText.setText(['GAME OVER', '', 'CLICK TO START OVER']);
-        this.centeredText.visible = true;
-
-        // Fade the centered text in
-        this.tweens.add({
-            targets: this.centeredText,
-            alpha: 1,
-            ease: 'Power1',
-            duration: 1000
-        });
+        this.setGameState(this.GS_ENDGAME);
 
         this.stopBall();
+
+        this.hideCenteredText();
+
+        var tweenHidePaddle = this.tweens.add({
+            targets: this.paddle
+            , alpha: 0
+            , delay: 125
+            , duration: 250
+            , repeat: 0
+            , onComplete: function(paddle) { paddle.visible = false; }
+            , onCompleteParams: [this.paddle]
+        });
+
+        // Reset the position of the endgame image offscreen
+        this.endgame.setPosition(this.endgameOrigin.x, this.endgameOrigin.y);
+
+        // Make the endgame graphic visible
+        this.endgame.visible = true;
+        this.endgame.alpha = 1;
+        this.endgame.scale = 1;
+
+        // Tween the image until it's shown at the edge of the screen
+        this.tweenShowEndgame = this.tweens.add({
+            targets: this.endgame
+            , x: 240
+            , y: 390
+            , duration: 15000
+            , repeat: 0
+            , ease: 'Sine.easeOut'
+            , onComplete: function() {
+                var daGame = this.parent.scene; // Bust out of the stupid scope of the tween callback
+                daGame.setGameState(daGame.GS_GAME_OVER);
+            }
+        });
+
+        // Slowly rotate image to give it that zero-g feel
+        var tween2 = this.tweens.add({
+            targets: this.endgame
+            , angle: this.endgame.angle + 2
+            , duration: 5000
+            , yoyo: true
+            , repeat: -1
+            , ease: 'Sine.easeInOut'
+        });
+
+        /*
+        // Zero-g bob
+        var tween3 = this.tweens.add({
+            targets: this.endgame
+            , y: '+=5'
+            , duration: 4000
+            , yoyo: true
+            , repeat: -1
+            , ease: 'Sine.easeInOut'
+        });
+        */
     },
+
+
+
+
     // ATTN: This doesn't modify the array - it returns that
     arrayRemove: function(arr, value) {
        return arr.filter(function(ele){
@@ -697,9 +766,63 @@ var Breakout = new Phaser.Class({
     setGameState: function(gameState) {
         this._gameState = gameState;
 
-        // Do stuff based on the new gameState value
-    }
+        console.log('Changed game state: ' + this._gameState);
 
+        // Do stuff based on the new gameState value
+        switch (this._gameState) {
+
+            case this.GS_GAME_OVER:
+                this.setCenteredText(['GAME OVER', '', 'CLICK TO START OVER']);
+                break;
+            
+            default:
+                console.log('   Taking no action');
+        }
+
+    },
+    setCenteredText: function(text) {
+        this.centeredText.setText(text);
+        this.fadeIn(this.centeredText);
+    },
+    hideCenteredText: function() {
+        this.fadeOut(this.centeredText);
+    },
+    fadeOut: function(obj, ms) {
+
+        if (typeof(ms) == 'undefined') {
+            ms = this.fadeSpeedMs;
+        }
+
+        this.tweens.add({
+            targets: obj
+            , alpha: 0
+            , ease: 'Power1'
+            , duration: ms
+            , onComplete: function() {
+                obj.visible = false;
+            }
+        })
+    },
+    fadeIn: function(obj, ms) {
+
+        if (obj.visible && obj.alpha == 1) {
+            console.log('obj is already visible - bailing');
+            return;
+        }
+
+        if (typeof(ms) == 'undefined') {
+            ms = this.fadeSpeedMs;
+        }
+
+        obj.alpha = 0;
+        obj.visible = true;
+        this.tweens.add({
+            targets: obj
+            , alpha: 1
+            , ease: 'Power1'
+            , duration: ms
+        })
+    }
 });
 
 var config = {
