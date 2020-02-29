@@ -567,21 +567,22 @@ var Breakout = new Phaser.Class({
                 this.endGame();
             }
         }
-        else if (this.ball.y < 15)
+        else if (this.ball.y <= 15)
         {
+            this.ball.y = 15;
             this.bounceBallY();
             this.soundPaddleHit.play();
         }
 
         var minX = 15;
         var maxX = 800 - 15;
-        if (this.ball.x > maxX)
+        if (this.ball.x >= maxX)
         {
             this.ball.x = maxX;
             this.bounceBallX();
             this.soundPaddleHit.play();
         } 
-        else if (this.ball.x < minX)
+        else if (this.ball.x <= minX)
         {
             this.ball.x = minX;
             this.bounceBallX();
