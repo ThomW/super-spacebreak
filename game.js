@@ -32,6 +32,8 @@ var Breakout = new Phaser.Class({
         this.scanlines;
 
         this.introText;
+
+        this.lastPainSound = -1;
     },
 
     preload: function ()
@@ -64,12 +66,27 @@ var Breakout = new Phaser.Class({
             ]);
         }
 
+        for (var i = 0; i < 5; i++) {
+            this.load.audio('voice-pain-' + i, [
+                'audio/voice-pain' + i + '.ogg',
+                'audio/voice-pain' + i + '.mp3'
+            ]);
+        }
+
+        for (var i = 0; i < 3; i++) {
+            this.load.audio('voice-ball-' + i, [
+                'audio/voice-ball' + i + '.ogg',
+                'audio/voice-ball' + i + '.mp3'
+            ]);
+        }
+
         this.load.image('endgame', 'img/endgame.png');
 
         this.load.audio('paddle_hit', [
             'audio/hit-paddle.ogg',
             'audio/hit-paddle.mp3'
         ]);
+        
 
         this.load.image('ball', 'img/ball.png');
         this.load.atlas('explosion', 'img/explosion.png', 'img/explosion.json');
@@ -94,6 +111,16 @@ var Breakout = new Phaser.Class({
             this.soundBrickHit[i] = this.sound.add('brick_hit_' + i);
         }
         this.soundPaddleHit = this.sound.add('paddle_hit');
+
+        this.soundPain = [];
+        for (var i = 0; i < 5; i++) {
+            this.soundPain[i] = this.sound.add('voice-pain-' + i);
+        }
+
+        this.soundBall = [];
+        for (var i = 0; i < 3; i++) {
+            this.soundBall[i] = this.sound.add('voice-ball-' + i);
+        }
 
         this.add.image(400, 300, 'background');
 
@@ -319,6 +346,9 @@ var Breakout = new Phaser.Class({
                 this.levelUp();
             }
         }
+
+        // Periodically the astronaut complains
+        this.playPainSound();
     },
 
     resetBall: function ()
@@ -334,6 +364,12 @@ var Breakout = new Phaser.Class({
 
             // Reset the highest row hit to the bottom row
             this.highestRowHit = 0;
+
+            // Play the sound of the player spawning
+            this.soundBall[this.getRemainingBalls()].play();
+
+            // Reset the timer that controls the next time our astronaut makes a noise
+            this.resetNextPainSound();
         }
     },
 
@@ -494,6 +530,9 @@ var Breakout = new Phaser.Class({
         this.setVelocity(this.ball, 'y', yVel);
 
         this.soundPaddleHit.play();
+
+        // Periodically the astronaut complains
+        this.playPainSound();
     },
 
     update: function (time, delta)
@@ -822,6 +861,29 @@ var Breakout = new Phaser.Class({
             , ease: 'Power1'
             , duration: ms
         })
+    },
+    playPainSound: function() {
+
+        // Don't play a sound if enough time hasn't passed
+        if (this.game.getTime() < this.nextPainSound) {
+            return;
+        }
+
+        // Prevent pain sound from repeating
+        var soundIdx = 0;
+        do {
+            soundIdx = this.rnd(0, this.soundPain.length - 1);
+        } while (soundIdx == this.lastPainSound);
+        this.lastPainSound = soundIdx;
+
+        // Play the sound
+        this.soundPain[soundIdx].play();
+
+        // Reset the timer that controls the frequency of the yelling
+        this.resetNextPainSound();
+    },
+    resetNextPainSound: function() {
+        this.nextPainSound = this.game.getTime() + this.rnd(4000, 8000);
     }
 });
 
