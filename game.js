@@ -814,7 +814,7 @@ var Breakout = new Phaser.Class({
         switch (this._gameState) {
 
             case this.GS_GAME_OVER:
-                this.setCenteredText(['GAME OVER', '', 'CLICK TO START OVER']);
+                this.setCenteredText(['', '', '','', '', '','', '', '', 'GAME OVER', '', 'CLICK TO START OVER']);
                 break;
             
             default:
