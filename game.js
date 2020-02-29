@@ -34,6 +34,8 @@ var Breakout = new Phaser.Class({
         this.introText;
 
         this.lastPainSound = -1;
+
+        this.NUM_PAIN_SOUNDS = 7; // This is the number of pain sounds in the project
     },
 
     preload: function ()
@@ -66,7 +68,7 @@ var Breakout = new Phaser.Class({
             ]);
         }
 
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < this.NUM_PAIN_SOUNDS; i++) {
             this.load.audio('voice-pain-' + i, [
                 'audio/voice-pain' + i + '.ogg',
                 'audio/voice-pain' + i + '.mp3'
@@ -113,7 +115,7 @@ var Breakout = new Phaser.Class({
         this.soundPaddleHit = this.sound.add('paddle_hit');
 
         this.soundPain = [];
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < this.NUM_PAIN_SOUNDS; i++) {
             this.soundPain[i] = this.sound.add('voice-pain-' + i);
         }
 
