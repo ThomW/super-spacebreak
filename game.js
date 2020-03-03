@@ -11,10 +11,13 @@ var Breakout = new Phaser.Class({
         this.GS_GAME_ACTIVE = "GAME ACTIVE";
         this.GS_GAME_INTRO = "INTRO";
         this.GS_ENDGAME = 'ENDGAME';
+        this.GS_MAIN_MENU = 'MAIN MENU';
+        this.GS_SETTINGS_MENU = 'SETTINGS';
+        this.GS_GAMEPAD_CALIBRATION = 'GAMEPAD CALIBRATION';
 
         this.fadeSpeedMs = 500;
 
-        this._gameState = this.GS_GAME_INIT;
+        this._gameState = this.GS_MAIN_MENU;
 
         this._score;
         this._remainingBalls = 0;
@@ -34,6 +37,18 @@ var Breakout = new Phaser.Class({
         this.introText;
 
         this.lastPainSound = -1;
+
+        this.menuItems = [];
+
+        this.soundEnabled = true;
+        this.voiceEnabled = true;
+        this.gamepadEnabled = false;
+
+        this.gamepad = null;
+        this.gamepadAxis = null;
+        this.gamepadCalibrationValues = {}; // gamepadAxis: [min, max]
+
+        this.confirmCalibrationButtonHandler = null;
 
         this.NUM_PAIN_SOUNDS = 7; // This is the number of pain sounds in the project
     },
@@ -196,40 +211,25 @@ var Breakout = new Phaser.Class({
         //  Input events
         this.input.on('pointermove', function (pointer) {
 
-            //  Keep the paddle within the game
-            this.paddle.x = Phaser.Math.Clamp(pointer.x, 65, 735);
+            // Don't move the paddle if gamepad is enabled
+            // I should probably kill the pointermove, but ...
+            // this is easier.  haha
+            if (!this.gamepadEnabled) {
 
-            if (this.ball.getData('onPaddle'))
-            {
-                this.ball.x = this.paddle.x;
+                //  Keep the paddle within the game
+                this.paddle.x = Phaser.Math.Clamp(pointer.x, 65, 735);
+
+                if (this.ball.getData('onPaddle'))
+                {
+                    this.ball.x = this.paddle.x;
+                }
             }
 
         }, this);
 
         this.input.on('pointerup', function (pointer) {
 
-            switch (this.getGameState()) {
-
-                case this.GS_GAME_INIT:
-                    this.showIntro();
-                    break;
-
-                case this.GS_GAME_INTRO:
-                case this.GS_GAME_OVER:
-                    this.startGame();
-                    break;
-
-                case this.GS_GAME_ACTIVE:
-                    if (this.ball.getData('onPaddle')) {
-                        this.ball.setData('onPaddle', false);
-                        this.startLevel();
-                    }    
-                    break;
-                
-                default:
-                    console.log('UNKNOWN GAME STATE IN POINTERUP: ' + this.getGameState());
-                    
-            }
+            this.actionButtonHandler();
 
         }, this);
         
@@ -268,11 +268,39 @@ var Breakout = new Phaser.Class({
 
         this.centeredText = this.add.bitmapText(400, 300, '8bit', '', 32).setOrigin(0.5).setCenterAlign();
         this.centeredText.visible = false;
-        this.setCenteredText(['Click to begin']);
         
         this.scanlines = this.add.image(400, 300, 'scanlines');
 
         this.title = this.add.image(400, 270, 'title');
+
+        this.showMainMenu();
+    },
+
+    // This is the handler for both the mouse click and gamepad button
+    actionButtonHandler: function() {
+        
+        switch (this.getGameState()) {
+
+            case this.GS_GAME_INIT:
+                this.showIntro();
+                break;
+
+            case this.GS_GAME_INTRO:
+            case this.GS_GAME_OVER:
+                this.startGame();
+                break;
+
+            case this.GS_GAME_ACTIVE:
+                if (this.ball.getData('onPaddle')) {
+                    this.ball.setData('onPaddle', false);
+                    this.startLevel();
+                }    
+                break;
+            
+            default:
+                console.log('UNKNOWN GAME STATE IN POINTERUP: ' + this.getGameState());
+        }
+
     },
 
     hitBrick: function (brick)
@@ -317,7 +345,9 @@ var Breakout = new Phaser.Class({
             var brickRow = brick.getData('row');
 
             // Play the appropriate sound
-            this.soundBrickHit[brickRow].play();
+            if (this.soundEnabled) {
+                this.soundBrickHit[brickRow].play();
+            }
 
             // Calculate new velocity for the ball - it gets faster as it hits further up the wall
             if (this.highestRowHit < brickRow)
@@ -368,7 +398,9 @@ var Breakout = new Phaser.Class({
             this.highestRowHit = 0;
 
             // Play the sound of the player spawning
-            this.soundBall[this.getRemainingBalls()].play();
+            if (this.voiceEnabled) {
+                this.soundBall[this.getRemainingBalls()].play();
+            }
 
             // Reset the timer that controls the next time our astronaut makes a noise
             this.resetNextPainSound();
@@ -531,7 +563,9 @@ var Breakout = new Phaser.Class({
         this.setVelocity(this.ball, 'x', xVel);
         this.setVelocity(this.ball, 'y', yVel);
 
-        this.soundPaddleHit.play();
+        if (this.soundEnabled) {
+            this.soundPaddleHit.play();
+        }
 
         // Periodically the astronaut complains
         this.playPainSound();
@@ -539,6 +573,64 @@ var Breakout = new Phaser.Class({
 
     update: function (time, delta)
     {
+        if (this.getGameState() == this.GS_GAMEPAD_CALIBRATION) {
+
+            var mostTravel = 0;
+            
+            for (var a = 0; a < this.gamepad.axes.length; a++) {
+                
+                var axis = this.gamepad.axes[a];
+                
+                var axisIndex = axis.index;
+                var axisValue = axis.getValue();
+                
+                // Store the lowest[0] and highest[1] values captured during calibration
+                if (typeof(this.gamepadCalibrationValues[axisIndex]) != 'undefined') {
+
+                    // Store the lowest value during calibration
+                    this.gamepadCalibrationValues[axisIndex][0] = Math.min(axisValue, this.gamepadCalibrationValues[axisIndex][0]);
+
+                    // Store the highest value during calibration
+                    this.gamepadCalibrationValues[axisIndex][1] = Math.max(axisValue, this.gamepadCalibrationValues[axisIndex][1]);
+
+                    // If this axis has traveled more than others, make it the standard
+                    var travel = this.gamepadCalibrationValues[axisIndex][1] - this.gamepadCalibrationValues[axisIndex][0];
+                    if (travel > mostTravel) {
+                        mostTravel = travel;
+                        this.gamepadAxis = axisIndex;
+                    }
+                } 
+                else {
+                    // Populate the axis for the first time
+                    this.gamepadCalibrationValues[axis.index] = [axisValue, axisValue];
+                }
+            }
+        }
+
+        // Move the paddle if the gamepad is enabled
+        if (this.gamepadEnabled) {
+            
+            // Calculate total range of the selected gamepad axis
+            var gamepadRange = this.gamepadCalibrationValues[this.gamepadAxis][1] - this.gamepadCalibrationValues[this.gamepadAxis][0];
+
+            // Get gamepad value and adjust it into the range where 0 is the min and the max value is the value of range
+            var gamepadValue = this.gamepad.axes[this.gamepadAxis].getValue() - this.gamepadCalibrationValues[this.gamepadAxis][0];
+            
+            var pct = gamepadValue / gamepadRange;
+
+            var MIN_X = 65;
+            var MAX_X = 735;
+            var RANGE_X = MAX_X - MIN_X;
+
+            // Move the paddle in line with where we are in the axis travel
+            this.paddle.x = (RANGE_X * pct) + MIN_X;
+
+            if (this.ball.getData('onPaddle'))
+            {
+                this.ball.x = this.paddle.x;
+            }
+        }
+
         var velocityAdj = delta / 8;
 
         for (var i = 0; i < this.stars.length; i++)
@@ -571,7 +663,10 @@ var Breakout = new Phaser.Class({
         {
             this.ball.y = 15;
             this.bounceBallY();
-            this.soundPaddleHit.play();
+
+            if (this.soundEnabled) {
+                this.soundPaddleHit.play();
+            }
         }
 
         var minX = 15;
@@ -580,13 +675,17 @@ var Breakout = new Phaser.Class({
         {
             this.ball.x = maxX;
             this.bounceBallX();
-            this.soundPaddleHit.play();
+            if (this.soundEnabled) {
+                this.soundPaddleHit.play();
+            }
         } 
         else if (this.ball.x <= minX)
         {
             this.ball.x = minX;
             this.bounceBallX();
-            this.soundPaddleHit.play();
+            if (this.soundEnabled) {
+                this.soundPaddleHit.play();
+            }
         }
 
         // See if the ball is hitting the paddle
@@ -867,6 +966,11 @@ var Breakout = new Phaser.Class({
     },
     playPainSound: function() {
 
+        // Bail if voice is disabled
+        if (!this.voiceEnabled) {
+            return;
+        }
+
         // Don't play a sound if enough time hasn't passed
         if (this.game.getTime() < this.nextPainSound) {
             return;
@@ -887,6 +991,140 @@ var Breakout = new Phaser.Class({
     },
     resetNextPainSound: function() {
         this.nextPainSound = this.game.getTime() + this.rnd(4000, 8000);
+    },
+
+    cleanupMenu: function() {
+        for (var i = 0; i < this.menuItems.length; i++) {
+            this.menuItems[i].destroy();
+        }
+        this.menuItems = [];
+    },
+
+    onStartClick: function() {
+
+        // Kill the menu
+        this.cleanupMenu();
+
+        // Start the intro
+        this.showIntro();
+    },
+
+    onToggleVoices: function() {
+        this.voiceEnabled = !this.voiceEnabled;
+        this.showSettingsMenu(); // Redraw the menu to force the value to update
+    },
+    onToggleSound: function() {
+        this.soundEnabled = !this.soundEnabled;
+        this.showSettingsMenu(); // Redraw the menu to force the value to update
+    },
+
+    addMenuButton: function(label, callback) {
+
+        var x = 180;
+        var y = 240 + this.menuItems.length * 50;
+
+        var item = this.add.bitmapText(x, y, '8bit', '', 32).setInteractive();
+        item.setText(label);
+
+        if (typeof(callback) != 'undefined') {
+            item.once('pointerup', callback, this);
+        }
+
+        this.menuItems.push(item);
+    },
+    addMenuCheckbox: function(label, checked, callback) {
+        var space = ' ';
+        var NUM_SPACES = 12;
+        this.addMenuButton(this.left(label + space.repeat(NUM_SPACES), NUM_SPACES) + (checked ? 'ON' : 'OFF'), callback);
+    },
+
+    showMainMenu: function() {
+        this.cleanupMenu();
+        this.addMenuButton('START', this.onStartClick);
+        this.addMenuButton('SETTINGS', this.showSettingsMenu);
+    },
+
+    showSettingsMenu: function() {
+        console.log('showSettingsMenu');
+        this.cleanupMenu();
+        this.addMenuCheckbox('VOICES', this.voiceEnabled, this.onToggleVoices);
+        this.addMenuCheckbox('SOUND', this.soundEnabled, this.onToggleSound);
+        this.addMenuCheckbox('GAMEPAD', this.gamepadEnabled, this.onToggleGamepad);
+        this.addMenuButton(''); // Whitespace
+        this.addMenuButton('BACK', this.showMainMenu);
+    },
+
+    onToggleGamepad: function() {
+
+        this.cleanupMenu();
+
+        console.log('gamepads: ' + this.input.gamepad.total);
+
+        if (this.input.gamepad.total == 0) {
+
+            this.addMenuButton('NO GAMEPAD FOUND', this.showSettingsMenu);
+            this.addMenuButton('',);
+            this.addMenuButton('CANCEL', this.showSettingsMenu);
+
+        } else {
+
+            this.addMenuButton('PRESS A BUTTON');
+            this.addMenuButton('ON THE GAMEPAD',);
+            this.addMenuButton('',);
+            this.addMenuButton('CANCEL', this.showSettingsMenu);
+    
+            // Install gamepad event handler
+            this.input.gamepad.once('down', function (pad, button, index) {
+
+                console.log('Playing with ' + pad.id);
+                
+                this.gamepad = pad;
+    
+                // Reset the calibration values map
+                this.gamepadCalibrationValues = {};
+    
+                this.showCalibrateGamepadMenu();
+            }, this);
+        }    
+    },
+
+    onAbortCalibration: function() { 
+        this.gamepad = null;
+        this.gamepadEnabled = false;
+        this.input.gamepad.removeAllListeners();
+        this.showSettingsMenu();
+    },
+
+    onFinalizeCalibration: function() {
+        this.gamepadEnabled = true;
+        this.showSettingsMenu();
+
+        // Install the action button handler
+        this.input.gamepad.on('down', this.actionButtonHandler, this);
+    },
+
+    showCalibrateGamepadMenu: function() {
+
+        this.cleanupMenu();
+
+        this.setGameState(this.GS_GAMEPAD_CALIBRATION);
+
+        this.addMenuButton('MOVE THE GAMEPAD');
+        this.addMenuButton('COMPLETELY RIGHT');
+        this.addMenuButton(' AND LEFT THEN');
+        this.addMenuButton('PRESS THE BUTTON');
+        this.addMenuButton('',);
+        this.addMenuButton('    CANCEL', this.onAbortCalibration);
+
+        this.input.gamepad.once('down', this.onFinalizeCalibration, this);
+    },
+
+    // Returns the rightmost characters in a string
+    right: function(str, chr) {
+        return str.substr(str.length - chr, str.length);
+    },
+    left: function(str, chr) {
+        return str.substr(0, chr);
     }
 });
 
@@ -901,7 +1139,10 @@ var config = {
         matter: {
             debug: false
         }
-    }
+    },
+    input: {
+        gamepad: true
+    },
 };
 
 var game = new Phaser.Game(config);
