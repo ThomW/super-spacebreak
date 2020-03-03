@@ -106,7 +106,6 @@ var Breakout = new Phaser.Class({
         
 
         this.load.image('ball', 'img/ball.png');
-        this.load.atlas('explosion', 'img/explosion.png', 'img/explosion.json');
 
         this.load.image('title', 'img/title.png');
 
