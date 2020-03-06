@@ -1,9 +1,9 @@
-# SUPER SPACEBREAK
+# SUPER SPACEOUT
 Ever wonder why there was a spaceman on the cover of the Atari 2600 game Super Breakout?  Me too.
 
-![screenshot](https://github.com/ThomW/super-spacebreak/blob/master/art/cover.png?raw=true)
+![screenshot](https://github.com/ThomW/super-spaceout/blob/master/art/cover.png?raw=true)
 
-[Play the game](https://lmnopc.com/super-spacebreak/)
+[Play the game](https://lmnopc.com/games/super-spaceout/)
 
 # Why I Made This
 
@@ -19,7 +19,7 @@ I finally had this insane idea to give the astronaut a voice, so I did my worst 
 
 This was supposed to be a quick weekend project, but things quickly blossomed out of scope when the astronaut rag doll turned out to be more difficult to create than I thought. Phaser.io now supports [Matter.js](https://brm.io/matter-js/) out of the box, so I went with that instead of turning to Box2d as I did with [Air Sea Golf](http://www.lmnopc.com/air-sea-golf/).
 
-Since I was planning on this being a throwaway, I leaned heavily on the code I had written for [UFO Destruction](http://lmnopc.com/ufo/) to get the basic game working, but that didn't do a bunch of things -- you have to refresh to restart the game, it doesn't tell you to turn your phone sideways - all the little things you'd add if you had enough time, but didn't with that project.  ANother huge timesink was the change to Matter.js;  the game code [straight up broke](http://lmnopc.com/games/super-spacebreak/index.html) after the switch. I wound up writing all the physics code for the brick-breaker game myself, but I later learned that you can mix and match physics engines in Phaser, so that wound up being a huge waste of time. 
+Since I was planning on this being a throwaway, I leaned heavily on the code I had written for [UFO Destruction](http://lmnopc.com/ufo/) to get the basic game working, but that didn't do a bunch of things -- you have to refresh to restart the game, it doesn't tell you to turn your phone sideways - all the little things you'd add if you had enough time, but didn't with that project.  ANother huge timesink was the change to Matter.js;  the game code [straight up broke](http://lmnopc.com/games/super-spaceout/v1/index.html) after the switch. I wound up writing all the physics code for the brick-breaker game myself, but I later learned that you can mix and match physics engines in Phaser, so that wound up being a huge waste of time. 
 
 Getting the ball bouncing right was a fun challenge. I've never written that kind of thing before, and there's definitely room for improvement, but I kind of like the quirkiness of it now. 
 
